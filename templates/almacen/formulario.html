@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block titulo %}{{ 'Nuevo producto' if modo == 'nuevo' else 'Editar producto' }}{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">{{ 'Alta' if modo == 'nuevo' else 'Modificación' }}</p>
+    <h1>{{ 'Nuevo producto' if modo == 'nuevo' else producto.nombre }}</h1>
+  </div>
+  <a class="btn btn-outline-secondary btn-sm"
+     href="{{ url_for('almacen.detalle', producto_id=producto.id) if producto.id else url_for('almacen.lista') }}">
+    Cancelar
+  </a>
+</div>
+
+<form method="post" class="card" style="max-width:760px">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-8">
+        <label class="form-label" for="nombre">Nombre del producto</label>
+        <input class="form-control" id="nombre" name="nombre" required
+               value="{{ producto.nombre or '' }}" placeholder="Algodón en rollo">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="categoria">Categoría</label>
+        <select class="form-select" id="categoria" name="categoria">
+          {% for clave, etiqueta in categorias.items() %}
+            <option value="{{ clave }}" {% if (producto.categoria or 'otros') == clave %}selected{% endif %}>
+              {{ etiqueta }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label" for="descripcion">Descripción</label>
+        <textarea class="form-control" id="descripcion" name="descripcion" rows="2"
+                  placeholder="Detalle, marca, presentación…">{{ producto.descripcion or '' }}</textarea>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label" for="unidad_medida">Unidad de medida</label>
+        <select class="form-select" id="unidad_medida" name="unidad_medida">
+          {% for clave, etiqueta in unidades.items() %}
+            <option value="{{ clave }}" {% if (producto.unidad_medida or 'unidad') == clave %}selected{% endif %}>
+              {{ etiqueta }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if modo == 'nuevo' %}
+        <div class="col-md-4">
+          <label class="form-label" for="stock_inicial">Stock inicial</label>
+          <input class="form-control dato" type="number" step="0.01" min="0" id="stock_inicial"
+                 name="stock_inicial" value="0" placeholder="0">
+          <div class="form-text">Ej: si ya tienes 3 paquetes, pon 3. Puedes usar decimales (0.5 = medio).</div>
+        </div>
+      {% endif %}
+      <div class="col-md-4">
+        <label class="form-label" for="stock_minimo">Stock mínimo (opcional)</label>
+        <input class="form-control dato" type="number" step="0.01" min="0" id="stock_minimo"
+               name="stock_minimo" value="{{ producto.stock_minimo if producto.stock_minimo is not none else '' }}"
+               placeholder="Avisa cuando baje de aquí">
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">Fecha de vencimiento</label>
+        <div class="d-flex gap-3 mb-2">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="tiene_vencimiento" id="venc_no" value="no"
+                   {% if not producto.tiene_vencimiento %}checked{% endif %}>
+            <label class="form-check-label" for="venc_no">No aplica</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="tiene_vencimiento" id="venc_si" value="si"
+                   {% if producto.tiene_vencimiento %}checked{% endif %}>
+            <label class="form-check-label" for="venc_si">Tiene fecha de vencimiento</label>
+          </div>
+        </div>
+        <input class="form-control" type="date" id="fecha_vencimiento" name="fecha_vencimiento"
+               value="{{ producto.fecha_vencimiento or '' }}" style="max-width:220px"
+               {% if not producto.tiene_vencimiento %}disabled{% endif %}>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-header border-top border-bottom-0 d-flex gap-2 justify-content-end">
+    <a class="btn btn-outline-secondary btn-sm"
+       href="{{ url_for('almacen.detalle', producto_id=producto.id) if producto.id else url_for('almacen.lista') }}">
+      Cancelar
+    </a>
+    <button class="btn btn-primary btn-sm" type="submit">
+      {{ 'Agregar al almacén' if modo == 'nuevo' else 'Guardar cambios' }}
+    </button>
+  </div>
+</form>
+
+<script>
+  (function () {
+    var fecha = document.getElementById('fecha_vencimiento');
+    document.querySelectorAll('input[name="tiene_vencimiento"]').forEach(function (r) {
+      r.addEventListener('change', function () {
+        fecha.disabled = document.getElementById('venc_no').checked;
+        if (fecha.disabled) fecha.value = '';
+      });
+    });
+  })();
+</script>
+{% endblock %}

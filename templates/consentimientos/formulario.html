@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block titulo %}Consentimiento informado · {{ paciente.nombre }}{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">Consentimiento informado</p>
+    <h1>{{ paciente.nombre }}</h1>
+  </div>
+  <a class="btn btn-outline-secondary btn-sm"
+     href="{{ url_for('pacientes.detalle', paciente_id=paciente.id) }}">
+    Cancelar
+  </a>
+</div>
+
+<form method="post" id="form-consentimiento" class="card" style="max-width:760px">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-12">
+        <label class="form-label" for="titulo">Título</label>
+        <input class="form-control" id="titulo" name="titulo" value="Consentimiento informado">
+      </div>
+      <div class="col-12">
+        <label class="form-label" for="texto">Texto del consentimiento</label>
+        <textarea class="form-control" id="texto" name="texto" rows="6" required>{{ texto_base }}</textarea>
+        <div class="form-text">Puedes editarlo para el tratamiento específico antes de que el paciente firme.</div>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label d-block">Firma del paciente</label>
+        <div class="kd-firma-caja">
+          <canvas id="lienzo-firma" width="680" height="220"></canvas>
+        </div>
+        <div class="d-flex justify-content-between mt-2">
+          <span class="small text-muted">Firma con el mouse, el dedo o el lápiz de la pantalla.</span>
+          <button class="btn btn-outline-secondary btn-sm" type="button" id="btn-limpiar-firma">Limpiar</button>
+        </div>
+        <input type="hidden" name="firma" id="firma-datauri">
+      </div>
+    </div>
+  </div>
+
+  <div class="card-header border-top border-bottom-0 d-flex gap-2 justify-content-end">
+    <a class="btn btn-outline-secondary btn-sm"
+       href="{{ url_for('pacientes.detalle', paciente_id=paciente.id) }}">
+      Cancelar
+    </a>
+    <button class="btn btn-primary btn-sm" type="submit">Guardar consentimiento firmado</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/firma.js') }}"></script>
+{% endblock %}

@@ -358,6 +358,304 @@
   </div>
 </div>
 
+<div class="row g-3 mt-1">
+  <!-- ================= PRESUPUESTO Y PAGOS ================= -->
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Presupuesto y pagos</span>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalPago">
+            Registrar pago
+          </button>
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalTratamiento">
+            Agregar tratamiento
+          </button>
+        </div>
+      </div>
+      <div class="card-body py-2">
+        <div class="row text-center g-2">
+          <div class="col-4">
+            <div class="small text-muted">Presupuestado</div>
+            <div class="dato fw-semibold">S/ {{ '%.2f' | format(total_presupuestado) }}</div>
+          </div>
+          <div class="col-4">
+            <div class="small text-muted">Pagado</div>
+            <div class="dato fw-semibold" style="color:var(--kd-verde)">S/ {{ '%.2f' | format(total_pagado) }}</div>
+          </div>
+          <div class="col-4">
+            <div class="small text-muted">Saldo pendiente</div>
+            <div class="dato fw-semibold" style="color:{{ 'var(--kd-lesion)' if saldo_pendiente > 0 else 'var(--kd-verde)' }}">
+              S/ {{ '%.2f' | format(saldo_pendiente) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% if tratamientos %}
+        <div class="table-responsive border-top">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr><th>Tratamiento</th><th>Costo</th><th>Estado</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for t in tratamientos %}
+                <tr>
+                  <td class="small">{{ t.descripcion }}<div class="text-muted" style="font-size:.7rem">{{ t.fecha | fecha }}</div></td>
+                  <td class="dato small">S/ {{ '%.2f' | format(t.costo) }}</td>
+                  <td>
+                    <form method="post" action="{{ url_for('finanzas.cambiar_estado_tratamiento', tratamiento_id=t.id) }}">
+                      <select class="form-select form-select-sm" name="estado" onchange="this.form.requestSubmit()" style="font-size:.72rem">
+                        {% for clave, info in estados_tratamiento.items() %}
+                          <option value="{{ clave }}" {{ 'selected' if t.estado == clave }}>{{ info.etiqueta }}</option>
+                        {% endfor %}
+                      </select>
+                    </form>
+                  </td>
+                  <td class="text-end">
+                    <form method="post" action="{{ url_for('finanzas.eliminar_tratamiento', tratamiento_id=t.id) }}"
+                          onsubmit="return confirm('¿Eliminar este tratamiento del presupuesto?')">
+                      <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted" style="font-size:.72rem" type="submit">Eliminar</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+
+      {% if pagos %}
+        <div class="table-responsive border-top">
+          <table class="table table-sm align-middle mb-0">
+            <thead><tr><th>Pago</th><th>Método</th><th>Fecha</th><th></th></tr></thead>
+            <tbody>
+              {% for p in pagos %}
+                <tr>
+                  <td class="dato small">S/ {{ '%.2f' | format(p.monto) }}</td>
+                  <td class="small">{{ metodos_pago.get(p.metodo, p.metodo) }}</td>
+                  <td class="small text-muted">{{ p.fecha | fecha }}</td>
+                  <td class="text-end">
+                    <form method="post" action="{{ url_for('finanzas.eliminar_pago', pago_id=p.id) }}"
+                          onsubmit="return confirm('¿Eliminar este pago?')">
+                      <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted" style="font-size:.72rem" type="submit">Eliminar</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+
+      {% if not tratamientos and not pagos %}
+        <div class="kd-vacio py-4">
+          <strong>Sin presupuesto todavía</strong>
+          Agrega un tratamiento para empezar a llevar la cuenta.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ================= CONSENTIMIENTOS Y LABORATORIO ================= -->
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Consentimientos firmados</span>
+        <a class="btn btn-primary btn-sm" href="{{ url_for('consentimientos.nuevo', paciente_id=paciente.id) }}">
+          Nuevo
+        </a>
+      </div>
+      {% if consentimientos %}
+        <div class="list-group list-group-flush">
+          {% for c in consentimientos %}
+            <div class="list-group-item border-0 d-flex justify-content-between align-items-center gap-2">
+              <div>
+                <div class="small fw-medium">{{ c.titulo }}</div>
+                <div class="dato small text-muted">{{ c.firmado_en | fecha_hora }}</div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <a class="btn btn-outline-secondary btn-sm" href="{{ c.firma_url }}" target="_blank">Ver firma</a>
+                <form method="post" action="{{ url_for('consentimientos.eliminar', consentimiento_id=c.id) }}"
+                      onsubmit="return confirm('¿Eliminar este consentimiento?')">
+                  <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted" style="font-size:.72rem" type="submit">Eliminar</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="kd-vacio py-4">
+          <strong>Sin consentimientos firmados</strong>
+          <a href="{{ url_for('consentimientos.nuevo', paciente_id=paciente.id) }}">Registra el primero</a>.
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Laboratorio dental</span>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalLaboratorio">
+          Nuevo envío
+        </button>
+      </div>
+      {% if laboratorio %}
+        <div class="list-group list-group-flush">
+          {% for l in laboratorio %}
+            <div class="list-group-item border-0">
+              <div class="d-flex justify-content-between align-items-start gap-2">
+                <div>
+                  <div class="small fw-medium">{{ l.descripcion }}</div>
+                  <div class="small text-muted">{{ l.laboratorio or 'Sin laboratorio indicado' }} · enviado {{ l.fecha_envio | fecha }}</div>
+                </div>
+                <form method="post" action="{{ url_for('laboratorio.eliminar', trabajo_id=l.id) }}"
+                      onsubmit="return confirm('¿Eliminar este registro?')">
+                  <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted" style="font-size:.72rem" type="submit">Eliminar</button>
+                </form>
+              </div>
+              <form method="post" action="{{ url_for('laboratorio.cambiar_estado', trabajo_id=l.id) }}" class="mt-1">
+                <select class="form-select form-select-sm w-auto" name="estado" onchange="this.form.requestSubmit()">
+                  {% for clave, info in estados_laboratorio.items() %}
+                    <option value="{{ clave }}" {{ 'selected' if l.estado == clave }}>{{ info.etiqueta }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="kd-vacio py-4">
+          <strong>Sin trabajos enviados</strong>
+          Registra coronas, prótesis u otros envíos al laboratorio.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: NUEVO TRATAMIENTO ================= -->
+<div class="modal fade" id="modalTratamiento" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" action="{{ url_for('finanzas.nuevo_tratamiento', paciente_id=paciente.id) }}">
+      <div class="modal-header">
+        <h5 class="modal-title">Agregar tratamiento · {{ paciente.nombre }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label" for="descripcion_tratamiento">Descripción</label>
+            <input class="form-control" id="descripcion_tratamiento" name="descripcion" required
+                   placeholder="Obturación pieza 36">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="costo_tratamiento">Costo (S/)</label>
+            <input class="form-control dato" type="number" step="0.01" min="0" id="costo_tratamiento"
+                   name="costo" required placeholder="150.00">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="estado_tratamiento">Estado</label>
+            <select class="form-select" id="estado_tratamiento" name="estado">
+              {% for clave, info in estados_tratamiento.items() %}
+                <option value="{{ clave }}">{{ info.etiqueta }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary btn-sm" type="submit">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= MODAL: NUEVO PAGO ================= -->
+<div class="modal fade" id="modalPago" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" action="{{ url_for('finanzas.nuevo_pago', paciente_id=paciente.id) }}">
+      <div class="modal-header">
+        <h5 class="modal-title">Registrar pago · {{ paciente.nombre }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="monto_pago">Monto (S/)</label>
+            <input class="form-control dato" type="number" step="0.01" min="0.01" id="monto_pago"
+                   name="monto" required placeholder="100.00">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="metodo_pago">Método</label>
+            <select class="form-select" id="metodo_pago" name="metodo">
+              {% for clave, etiqueta in metodos_pago.items() %}
+                <option value="{{ clave }}">{{ etiqueta }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if tratamientos %}
+            <div class="col-12">
+              <label class="form-label" for="tratamiento_id">Aplicar a un tratamiento (opcional)</label>
+              <select class="form-select" id="tratamiento_id" name="tratamiento_id">
+                <option value="">Sin asociar</option>
+                {% for t in tratamientos %}
+                  <option value="{{ t.id }}">{{ t.descripcion }} — S/ {{ '%.2f' | format(t.costo) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          {% endif %}
+          <div class="col-12">
+            <label class="form-label" for="notas_pago">Notas (opcional)</label>
+            <input class="form-control" id="notas_pago" name="notas">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary btn-sm" type="submit">Guardar pago</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= MODAL: NUEVO ENVÍO A LABORATORIO ================= -->
+<div class="modal fade" id="modalLaboratorio" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" action="{{ url_for('laboratorio.nuevo', paciente_id=paciente.id) }}">
+      <div class="modal-header">
+        <h5 class="modal-title">Nuevo envío a laboratorio · {{ paciente.nombre }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label" for="descripcion_lab">Descripción</label>
+            <input class="form-control" id="descripcion_lab" name="descripcion" required
+                   placeholder="Corona metal-cerámica pieza 26">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="laboratorio_nombre">Laboratorio</label>
+            <input class="form-control" id="laboratorio_nombre" name="laboratorio" placeholder="Nombre del laboratorio">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="fecha_estimada">Fecha estimada de entrega</label>
+            <input class="form-control" type="date" id="fecha_estimada" name="fecha_estimada">
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="notas_lab">Notas</label>
+            <input class="form-control" id="notas_lab" name="notas">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary btn-sm" type="submit">Guardar envío</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- ================= MODAL: NUEVA ENTRADA DE HISTORIAL ================= -->
 <div class="modal fade" id="modalHistorial" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">

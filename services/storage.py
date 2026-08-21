@@ -66,3 +66,21 @@ def borrar_imagen(storage_path: str) -> None:
         sb.storage.from_(BUCKET).remove([storage_path])
     except Exception:
         pass
+
+
+def subir_bytes(contenido: bytes, ruta: str, content_type: str) -> str:
+    """
+    Sube bytes ya en memoria (ej. una firma capturada en <canvas>, exportada
+    como PNG) y devuelve la URL pública. Más genérico que subir_imagen():
+    ese requiere un FileStorage de un <input type=file>.
+    """
+    if not contenido:
+        raise ErrorSubida("El archivo llegó vacío.")
+    try:
+        sb.storage.from_(BUCKET).upload(
+            path=ruta, file=contenido,
+            file_options={"content-type": content_type, "upsert": "false"},
+        )
+    except Exception as e:
+        raise ErrorSubida(f"Storage rechazó el archivo: {e}") from e
+    return sb.storage.from_(BUCKET).get_public_url(ruta)

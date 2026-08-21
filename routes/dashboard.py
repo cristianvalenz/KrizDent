@@ -1,6 +1,6 @@
 """Panel principal: cifras del día y próximas citas."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from flask import Blueprint, render_template
 
@@ -64,6 +64,24 @@ def index():
     for p in piezas:
         resumen_piezas[p["estado"]] = resumen_piezas.get(p["estado"], 0) + 1
 
+    # --- Alertas del almacén: stock bajo o por vencer en ≤30 días -----------
+    productos = (
+        sb.table("productos_almacen").select("id, nombre, stock_actual, stock_minimo, "
+                                              "unidad_medida, tiene_vencimiento, fecha_vencimiento")
+        .eq("activo", True).execute().data or []
+    )
+    hoy_fecha = date.today()
+    alertas_stock_bajo, alertas_vencimiento = [], []
+    for p in productos:
+        if p["stock_minimo"] is not None and float(p["stock_actual"]) <= float(p["stock_minimo"]):
+            alertas_stock_bajo.append(p)
+        if p["tiene_vencimiento"] and p["fecha_vencimiento"]:
+            dias = (date.fromisoformat(p["fecha_vencimiento"]) - hoy_fecha).days
+            if dias <= 30:
+                p["dias_para_vencer"] = dias
+                alertas_vencimiento.append(p)
+    alertas_vencimiento.sort(key=lambda p: p["dias_para_vencer"])
+
     return render_template(
         "index.html",
         total_pacientes=total_pacientes,
@@ -72,5 +90,7 @@ def index():
         pendientes_total=pendientes_total,
         ultimos_pacientes=ultimos_pacientes,
         resumen_piezas=resumen_piezas,
+        alertas_stock_bajo=alertas_stock_bajo,
+        alertas_vencimiento=alertas_vencimiento,
         hoy=hoy,
     )

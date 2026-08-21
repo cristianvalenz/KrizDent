@@ -8,6 +8,34 @@ CLINICA = {
     "direccion": "Santa Cruz de Cajamarquilla, MZ D lote 5",
 }
 
+# --- Almacén -----------------------------------------------------------------
+# Agrupación clínica de insumos de salud (no genérica tipo "categoría 1, 2, 3":
+# así el listado del almacén se puede filtrar por lo que realmente se busca).
+CATEGORIAS_ALMACEN = {
+    "material_curacion":     "Material de curación",
+    "proteccion_personal":   "Protección personal",
+    "anestesia_desechables": "Anestesia y desechables",
+    "insumos_dentales":      "Insumos dentales",
+    "medicamentos":          "Medicamentos",
+    "instrumental":          "Instrumental",
+    "otros":                 "Otros",
+}
+
+UNIDADES_MEDIDA = {
+    "unidad":  "Unidad",
+    "paquete": "Paquete",
+    "caja":    "Caja",
+    "frasco":  "Frasco",
+    "ml":      "Mililitros (ml)",
+    "mg":      "Miligramos (mg)",
+    "gr":      "Gramos (gr)",
+}
+
+TIPOS_MOVIMIENTO = {
+    "entrada": {"etiqueta": "Entrada", "clase": "estado-completada"},
+    "salida":  {"etiqueta": "Salida",  "clase": "estado-cancelada"},
+}
+
 # --- Citas -----------------------------------------------------------------
 ESTADOS_CITA = {
     "pendiente":  {"etiqueta": "Pendiente",  "clase": "estado-pendiente"},
@@ -97,3 +125,37 @@ TIPOS_MORDIDA = {
 
 # Extensiones aceptadas al subir imágenes al historial.
 EXT_IMAGEN = {".jpg", ".jpeg", ".png", ".webp"}
+
+# --- Presupuestos y pagos ---------------------------------------------------
+ESTADOS_TRATAMIENTO = {
+    "pendiente":   {"etiqueta": "Pendiente",   "clase": "estado-pendiente"},
+    "en_proceso":  {"etiqueta": "En proceso",  "clase": "estado-pendiente"},
+    "completado":  {"etiqueta": "Completado",  "clase": "estado-completada"},
+    "cancelado":   {"etiqueta": "Cancelado",   "clase": "estado-cancelada"},
+}
+METODOS_PAGO = {
+    "efectivo":      "Efectivo",
+    "yape_plin":     "Yape / Plin",
+    "tarjeta":       "Tarjeta",
+    "transferencia": "Transferencia",
+    "otro":          "Otro",
+}
+
+# --- Consentimiento informado -----------------------------------------------
+# Texto base editable al momento de firmar. Cumple con mencionar el
+# almacenamiento digital de datos, como recomienda el propio README (Ley 29733).
+CONSENTIMIENTO_TEXTO_BASE = (
+    "Declaro que he sido informado(a) de forma clara sobre el diagnóstico, "
+    "el tratamiento odontológico propuesto, sus alternativas, riesgos y "
+    "beneficios, y que todas mis dudas fueron resueltas antes de firmar. "
+    "Autorizo a KrizDent a realizar el tratamiento descrito y entiendo que "
+    "mi historial clínico se almacena digitalmente en un servicio en la nube."
+)
+
+# --- Laboratorio dental ------------------------------------------------------
+ESTADOS_LABORATORIO = {
+    "enviado":    {"etiqueta": "Enviado",    "clase": "estado-pendiente"},
+    "en_proceso": {"etiqueta": "En proceso", "clase": "estado-pendiente"},
+    "listo":      {"etiqueta": "Listo para recoger", "clase": "estado-completada"},
+    "entregado":  {"etiqueta": "Entregado",  "clase": "estado-completada"},
+}

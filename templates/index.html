@@ -42,6 +42,29 @@
   </div>
 </div>
 
+{% if alertas_stock_bajo or alertas_vencimiento %}
+  <div class="card mb-4" style="border-color:#F2D4D4">
+    <div class="card-header" style="background:#FBEAEA;color:var(--kd-lesion)">
+      Alertas del almacén
+    </div>
+    <div class="card-body small">
+      {% for p in alertas_stock_bajo %}
+        <div class="mb-1">
+          <a href="{{ url_for('almacen.detalle', producto_id=p.id) }}">{{ p.nombre }}</a>
+          — stock bajo: {{ p.stock_actual }} {{ p.unidad_medida }} (mínimo {{ p.stock_minimo }})
+        </div>
+      {% endfor %}
+      {% for p in alertas_vencimiento %}
+        <div class="mb-1">
+          <a href="{{ url_for('almacen.detalle', producto_id=p.id) }}">{{ p.nombre }}</a>
+          — {% if p.dias_para_vencer < 0 %}vencido hace {{ -p.dias_para_vencer }} día(s)
+          {% else %}vence en {{ p.dias_para_vencer }} día(s){% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
 <div class="row g-3">
   <!-- ---------- Citas de hoy ---------- -->
   <div class="col-lg-7">

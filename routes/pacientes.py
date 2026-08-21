@@ -4,8 +4,10 @@ from flask import (Blueprint, Response, abort, flash, jsonify, redirect,
                    render_template, request, url_for)
 
 from services.constantes import (ARCADAS, CARAS_PIEZA, ESTADOS_CARA,
-                                  ESTADOS_ORTODONCIA, ESTADOS_PIEZA,
-                                  TIPOS_MORDIDA, TIPOS_ORTODONCIA, TIPOS_PACIENTE)
+                                  ESTADOS_LABORATORIO, ESTADOS_ORTODONCIA,
+                                  ESTADOS_PIEZA, ESTADOS_TRATAMIENTO,
+                                  METODOS_PAGO, TIPOS_MORDIDA, TIPOS_ORTODONCIA,
+                                  TIPOS_PACIENTE)
 from services.historial_pdf import generar_historial_pdf
 from services.supabase_client import sb
 
@@ -176,6 +178,28 @@ def detalle(paciente_id):
         .eq("paciente_id", paciente_id).order("id").execute().data or []
     )
 
+    # --- Presupuesto y pagos --------------------------------------------
+    tratamientos = (
+        sb.table("tratamientos").select("*").eq("paciente_id", paciente_id)
+        .order("fecha", desc=True).execute().data or []
+    )
+    pagos = (
+        sb.table("pagos").select("*").eq("paciente_id", paciente_id)
+        .order("fecha", desc=True).execute().data or []
+    )
+    total_presupuestado = sum(float(t["costo"]) for t in tratamientos if t["estado"] != "cancelado")
+    total_pagado = sum(float(p["monto"]) for p in pagos)
+    saldo_pendiente = round(total_presupuestado - total_pagado, 2)
+
+    consentimientos = (
+        sb.table("consentimientos").select("*").eq("paciente_id", paciente_id)
+        .order("firmado_en", desc=True).execute().data or []
+    )
+    laboratorio = (
+        sb.table("trabajos_laboratorio").select("*").eq("paciente_id", paciente_id)
+        .order("fecha_envio", desc=True).execute().data or []
+    )
+
     return render_template(
         "pacientes/detalle.html",
         paciente=paciente,
@@ -193,6 +217,16 @@ def detalle(paciente_id):
         tipos_ortodoncia=TIPOS_ORTODONCIA,
         estados_ortodoncia=ESTADOS_ORTODONCIA,
         arcadas=ARCADAS,
+        tratamientos=tratamientos,
+        pagos=pagos,
+        total_presupuestado=total_presupuestado,
+        total_pagado=total_pagado,
+        saldo_pendiente=saldo_pendiente,
+        estados_tratamiento=ESTADOS_TRATAMIENTO,
+        metodos_pago=METODOS_PAGO,
+        consentimientos=consentimientos,
+        laboratorio=laboratorio,
+        estados_laboratorio=ESTADOS_LABORATORIO,
     )
 
 

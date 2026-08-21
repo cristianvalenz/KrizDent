@@ -7,7 +7,10 @@
     <p class="kd-eyebrow">{{ total }} cita(s) en el rango</p>
     <h1>Agenda</h1>
   </div>
-  <a class="btn btn-primary btn-sm" href="{{ url_for('citas.nueva') }}">Agendar cita</a>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('citas.calendario') }}">Ver calendario</a>
+    <a class="btn btn-primary btn-sm" href="{{ url_for('citas.nueva') }}">Agendar cita</a>
+  </div>
 </div>
 
 <!-- Filtros por rango de fechas y estado -->
@@ -74,6 +77,15 @@
               <td><span class="kd-estado estado-{{ c.estado }}">{{ estados[c.estado].etiqueta }}</span></td>
               <td class="text-end">
                 <div class="d-inline-flex gap-1">
+                  {% if c.pacientes.telefono %}
+                    {% set mensaje = 'Hola ' ~ c.pacientes.nombre ~ ', te recordamos tu cita en KrizDent el ' ~ (c.fecha_hora | fecha) ~ ' a las ' ~ (c.fecha_hora | hora) ~ '. Cualquier cambio, avísanos. ¡Gracias!' %}
+                    <a class="btn btn-outline-secondary btn-sm" target="_blank"
+                       href="https://wa.me/51{{ c.pacientes.telefono | replace(' ', '') }}?text={{ mensaje | urlencode }}"
+                       onclick="fetch('{{ url_for('citas.marcar_recordatorio', cita_id=c.id) }}', {method:'POST'})"
+                       title="Abre WhatsApp con el mensaje ya escrito">
+                      {{ 'Recordatorio ✓' if c.recordatorio_enviado else 'Recordatorio' }}
+                    </a>
+                  {% endif %}
                   {% if c.estado != 'completada' %}
                     <form method="post" action="{{ url_for('citas.cambiar_estado', cita_id=c.id) }}">
                       <input type="hidden" name="estado" value="completada">

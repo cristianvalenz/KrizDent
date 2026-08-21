@@ -41,6 +41,9 @@ create table if not exists citas (
     estado        text not null default 'pendiente'
                   check (estado in ('pendiente', 'completada', 'cancelada')),
     notas         text,
+    -- El recordatorio se envía manualmente por WhatsApp (enlace wa.me con el
+    -- mensaje ya escrito); esto solo evita reenviarlo dos veces por error.
+    recordatorio_enviado boolean not null default false,
     creado_en     timestamptz not null default now()
 );
 
@@ -141,6 +144,107 @@ create table if not exists ortodoncia_aparatos (
 create index if not exists idx_ortodoncia_paciente on ortodoncia_aparatos (paciente_id);
 
 -- ---------------------------------------------------------------------
+-- 4b. ALMACÉN — productos (insumos de salud) + kardex de movimientos
+-- ---------------------------------------------------------------------
+create table if not exists productos_almacen (
+    id              bigserial primary key,
+    nombre          text not null,
+    descripcion     text,
+    -- Agrupación clínica de insumos de salud.
+    categoria       text not null default 'otros'
+                    check (categoria in ('material_curacion', 'proteccion_personal',
+                                          'anestesia_desechables', 'insumos_dentales',
+                                          'medicamentos', 'instrumental', 'otros')),
+    unidad_medida   text not null default 'unidad'
+                    check (unidad_medida in ('unidad', 'paquete', 'caja', 'frasco', 'ml', 'mg', 'gr')),
+    tiene_vencimiento boolean not null default false,
+    fecha_vencimiento date,
+    -- Stock en la MISMA unidad_medida. Numeric admite fracciones: "medio paquete" = 0.5.
+    stock_actual    numeric(10,2) not null default 0,
+    stock_minimo    numeric(10,2),           -- umbral para avisar "stock bajo" (opcional)
+    activo          boolean not null default true,
+    creado_en       timestamptz not null default now()
+);
+create index if not exists idx_productos_categoria on productos_almacen (categoria);
+create index if not exists idx_productos_vencimiento on productos_almacen (fecha_vencimiento)
+    where tiene_vencimiento;
+
+-- Kardex: una fila por cada entrada o salida. saldo_resultante deja el
+-- historial auditable sin tener que recalcular sumas cada vez.
+create table if not exists movimientos_almacen (
+    id                bigserial primary key,
+    producto_id       bigint not null references productos_almacen(id) on delete cascade,
+    tipo              text not null check (tipo in ('entrada', 'salida')),
+    cantidad          numeric(10,2) not null check (cantidad > 0),
+    saldo_resultante  numeric(10,2) not null,
+    -- Solo tiene sentido en 'entrada': cuánto costó esa compra, para poder
+    -- sumar "cuánto gasté en este material" a lo largo del tiempo.
+    costo_unitario    numeric(10,2),
+    motivo            text,
+    creado_en         timestamptz not null default now()
+);
+create index if not exists idx_movimientos_producto on movimientos_almacen (producto_id, creado_en desc);
+
+-- ---------------------------------------------------------------------
+-- 4c. PRESUPUESTOS Y PAGOS
+-- ---------------------------------------------------------------------
+create table if not exists tratamientos (
+    id           bigserial primary key,
+    paciente_id  bigint not null references pacientes(id) on delete cascade,
+    descripcion  text not null,
+    costo        numeric(10,2) not null check (costo >= 0),
+    fecha        date not null default current_date,
+    estado       text not null default 'pendiente'
+                 check (estado in ('pendiente', 'en_proceso', 'completado', 'cancelado')),
+    creado_en    timestamptz not null default now()
+);
+create index if not exists idx_tratamientos_paciente on tratamientos (paciente_id);
+
+create table if not exists pagos (
+    id             bigserial primary key,
+    paciente_id    bigint not null references pacientes(id) on delete cascade,
+    tratamiento_id bigint references tratamientos(id) on delete set null,
+    monto          numeric(10,2) not null check (monto > 0),
+    metodo         text not null default 'efectivo'
+                   check (metodo in ('efectivo', 'yape_plin', 'tarjeta', 'transferencia', 'otro')),
+    fecha          date not null default current_date,
+    notas          text,
+    creado_en      timestamptz not null default now()
+);
+create index if not exists idx_pagos_paciente on pagos (paciente_id);
+
+-- ---------------------------------------------------------------------
+-- 4d. CONSENTIMIENTO INFORMADO CON FIRMA
+-- ---------------------------------------------------------------------
+create table if not exists consentimientos (
+    id            bigserial primary key,
+    paciente_id   bigint not null references pacientes(id) on delete cascade,
+    titulo        text not null default 'Consentimiento informado',
+    texto         text not null,
+    firma_url     text not null,     -- PNG de la firma, en el bucket de Storage
+    firmado_en    timestamptz not null default now()
+);
+create index if not exists idx_consentimientos_paciente on consentimientos (paciente_id);
+
+-- ---------------------------------------------------------------------
+-- 4e. LABORATORIO DENTAL
+-- ---------------------------------------------------------------------
+create table if not exists trabajos_laboratorio (
+    id                bigserial primary key,
+    paciente_id       bigint not null references pacientes(id) on delete cascade,
+    laboratorio       text,
+    descripcion       text not null,
+    fecha_envio       date not null default current_date,
+    fecha_estimada    date,
+    fecha_recibido    date,
+    estado            text not null default 'enviado'
+                      check (estado in ('enviado', 'en_proceso', 'listo', 'entregado')),
+    notas             text,
+    creado_en         timestamptz not null default now()
+);
+create index if not exists idx_laboratorio_paciente on trabajos_laboratorio (paciente_id);
+
+-- ---------------------------------------------------------------------
 -- 5. ÍNDICES
 -- ---------------------------------------------------------------------
 create index if not exists idx_citas_fecha        on citas (fecha_hora);
@@ -172,6 +276,17 @@ create index if not exists idx_pacientes_nombre   on pacientes (lower(nombre));
 -- Para un consultorio real, deja el bucket PRIVADO y cambia
 -- services/storage.py para usar URLs firmadas (create_signed_url),
 -- porque una radiografía es un dato de salud.
+--
+-- Storage tiene RLS propio (además del de las tablas). Como el backend usa
+-- la llave 'anon' (sin login todavía), hace falta una política explícita
+-- o toda subida de imagen/firma falla con "row violates row-level security
+-- policy". Ejecuta esto también:
+--   create policy "anon_lee_historial" on storage.objects
+--       for select to anon using (bucket_id = 'historial');
+--   create policy "anon_sube_historial" on storage.objects
+--       for insert to anon with check (bucket_id = 'historial');
+--   create policy "anon_borra_historial" on storage.objects
+--       for delete to anon using (bucket_id = 'historial');
 
 -- ---------------------------------------------------------------------
 -- 8. DATOS DE EJEMPLO (opcional — bórralo antes de usarlo de verdad)

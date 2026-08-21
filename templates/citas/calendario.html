@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block titulo %}Calendario · Agenda{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">Calendario</p>
+    <h1>{{ mes_etiqueta | capitalize }}</h1>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('citas.calendario', mes=mes_anterior) }}">‹ Mes anterior</a>
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('citas.lista') }}">Ver lista</a>
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('citas.calendario', mes=mes_siguiente) }}">Mes siguiente ›</a>
+  </div>
+</div>
+
+<div class="card">
+  <table class="table table-bordered mb-0 kd-calendario">
+    <thead>
+      <tr>
+        {% for dia_semana in ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"] %}
+          <th class="text-center small text-muted">{{ dia_semana }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for semana in semanas %}
+        <tr>
+          {% for dia in semana %}
+            {% set citas_dia = por_dia.get(dia.isoformat(), []) %}
+            <td class="{{ 'kd-dia-fuera' if dia.month != mes_actual.month }} {{ 'kd-dia-hoy' if dia == hoy }}">
+              <div class="kd-dia-numero">{{ dia.day }}</div>
+              {% for c in citas_dia[:3] %}
+                <a class="kd-dia-cita estado-{{ c.estado }}"
+                   href="{{ url_for('pacientes.detalle', paciente_id=c.pacientes.id) }}"
+                   title="{{ c.pacientes.nombre }} · {{ c.motivo or 'Sin motivo' }}">
+                  {{ c.fecha_hora | hora }} {{ c.pacientes.nombre }}
+                </a>
+              {% endfor %}
+              {% if citas_dia | length > 3 %}
+                <div class="small text-muted">+{{ citas_dia | length - 3 }} más</div>
+              {% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

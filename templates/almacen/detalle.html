@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% block titulo %}{{ producto.nombre }}{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">{{ categorias.get(producto.categoria, producto.categoria) }}</p>
+    <h1>{{ producto.nombre }}</h1>
+    {% if producto.descripcion %}<p class="subtitulo">{{ producto.descripcion }}</p>{% endif %}
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('almacen.editar', producto_id=producto.id) }}">
+      Editar datos
+    </a>
+    <form method="post" action="{{ url_for('almacen.baja', producto_id=producto.id) }}"
+          onsubmit="return confirm('Se quitará del almacén activo (el kardex se conserva). ¿Continuar?')">
+      <button class="btn btn-outline-secondary btn-sm" type="submit">Dar de baja</button>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card kd-cifra">
+      <div class="kd-eyebrow">Stock actual</div>
+      <div class="valor">{{ producto.stock_actual }} <span class="small text-muted">{{ producto.unidad_medida }}</span></div>
+      {% if producto.stock_minimo is not none %}
+        <div class="rotulo">Mínimo: {{ producto.stock_minimo }}</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card kd-cifra acento-azul">
+      <div class="kd-eyebrow">Gastado en compras</div>
+      <div class="valor">S/ {{ '%.2f' | format(total_gastado) }}</div>
+      <div class="rotulo">Suma de entradas con costo registrado</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card kd-cifra acento-rojo">
+      <div class="kd-eyebrow">Consumido en total</div>
+      <div class="valor">{{ total_consumido }} <span class="small text-muted">{{ producto.unidad_medida }}</span></div>
+      <div class="rotulo">Suma histórica de salidas</div>
+    </div>
+  </div>
+</div>
+
+{% if producto.tiene_vencimiento %}
+  <div class="card mb-3">
+    <div class="card-header">Vencimiento</div>
+    <div class="card-body small">
+      Fecha registrada: <span class="dato">{{ producto.fecha_vencimiento }}</span>
+    </div>
+  </div>
+{% endif %}
+
+<!-- ================= KARDEX ================= -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Kardex <span class="text-muted fw-normal small">· {{ movimientos | length }} movimiento(s)</span></span>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalSalida">
+        Registrar salida
+      </button>
+      <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalEntrada">
+        Registrar entrada
+      </button>
+    </div>
+  </div>
+
+  {% if movimientos %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Cantidad</th>
+            <th>Costo unit.</th>
+            <th>Saldo resultante</th>
+            <th>Motivo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in movimientos %}
+            <tr>
+              <td class="dato small">{{ m.creado_en | fecha_hora }}</td>
+              <td><span class="kd-estado {{ tipos_movimiento[m.tipo].clase }}">{{ tipos_movimiento[m.tipo].etiqueta }}</span></td>
+              <td class="dato small">{{ '+' if m.tipo == 'entrada' else '-' }}{{ m.cantidad }}</td>
+              <td class="dato small">{{ ('S/ %.2f' | format(m.costo_unitario)) if m.costo_unitario else '—' }}</td>
+              <td class="dato small">{{ m.saldo_resultante }}</td>
+              <td class="small text-muted">{{ m.motivo or '—' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="kd-vacio py-4">
+      <strong>Sin movimientos todavía</strong>
+      Registra una entrada para empezar el kardex.
+    </div>
+  {% endif %}
+</div>
+
+<!-- ================= MODAL: ENTRADA ================= -->
+<div class="modal fade" id="modalEntrada" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" action="{{ url_for('almacen.entrada', producto_id=producto.id) }}">
+      <div class="modal-header">
+        <h5 class="modal-title">Registrar entrada · {{ producto.nombre }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="cantidad_entrada">Cantidad ({{ producto.unidad_medida }})</label>
+            <input class="form-control dato" type="number" step="0.01" min="0.01" id="cantidad_entrada"
+                   name="cantidad" required placeholder="Ej: 2">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="costo_unitario">Costo unitario (opcional)</label>
+            <input class="form-control dato" type="number" step="0.01" min="0" id="costo_unitario"
+                   name="costo_unitario" placeholder="S/ por unidad">
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="motivo_entrada">Motivo</label>
+            <input class="form-control" id="motivo_entrada" name="motivo" placeholder="Compra a proveedor X">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary btn-sm" type="submit">Guardar entrada</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= MODAL: SALIDA ================= -->
+<div class="modal fade" id="modalSalida" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" action="{{ url_for('almacen.salida', producto_id=producto.id) }}">
+      <div class="modal-header">
+        <h5 class="modal-title">Registrar salida · {{ producto.nombre }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small text-muted">Stock disponible: <strong class="dato">{{ producto.stock_actual }} {{ producto.unidad_medida }}</strong></p>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="cantidad_salida">Cantidad ({{ producto.unidad_medida }})</label>
+            <input class="form-control dato" type="number" step="0.01" min="0.01"
+                   max="{{ producto.stock_actual }}" id="cantidad_salida" name="cantidad" required
+                   placeholder="Ej: 0.5">
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="motivo_salida">Motivo</label>
+            <input class="form-control" id="motivo_salida" name="motivo" placeholder="Usado en paciente / procedimiento">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary btn-sm" type="submit">Guardar salida</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

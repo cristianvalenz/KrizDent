@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block titulo %}Reportes{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">Últimos 6 meses</p>
+    <h1>Reportes</h1>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card kd-cifra acento-azul">
+      <div class="kd-eyebrow">Total facturado</div>
+      <div class="valor">S/ {{ '%.2f' | format(total_facturado) }}</div>
+      <div class="rotulo">Suma de tratamientos presupuestados</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card kd-cifra acento-verde">
+      <div class="kd-eyebrow">Total cobrado</div>
+      <div class="valor">S/ {{ '%.2f' | format(total_cobrado) }}</div>
+      <div class="rotulo">Suma de pagos registrados</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card kd-cifra">
+      <div class="kd-eyebrow">Pacientes registrados</div>
+      <div class="valor">{{ total_pacientes }}</div>
+      <div class="rotulo">Histórico, desde el inicio</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">Ingresos por mes (S/)</div>
+      <div class="card-body">
+        <canvas id="grafico-ingresos" height="110"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header">Pacientes nuevos por mes</div>
+      <div class="card-body">
+        <canvas id="grafico-pacientes" height="110"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-header">Tratamientos más frecuentes</div>
+  <div class="card-body">
+    {% if top_tratamientos %}
+      <canvas id="grafico-tratamientos" height="{{ (top_tratamientos | length) * 34 + 20 }}"></canvas>
+    {% else %}
+      <div class="kd-vacio py-4">
+        <strong>Todavía no hay tratamientos registrados</strong>
+        Se llenan desde el presupuesto de cada paciente.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  const COLOR_AZUL = "#1B6E8C";
+  const COLOR_VERDE = "#2E8B6E";
+  const COLOR_TINTA = "#16232E";
+
+  new Chart(document.getElementById("grafico-ingresos"), {
+    type: "bar",
+    data: {
+      labels: {{ etiquetas_mes | tojson }},
+      datasets: [{ label: "Ingresos", data: {{ ingresos | tojson }}, backgroundColor: COLOR_AZUL, borderRadius: 4 }],
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } },
+  });
+
+  new Chart(document.getElementById("grafico-pacientes"), {
+    type: "line",
+    data: {
+      labels: {{ etiquetas_mes | tojson }},
+      datasets: [{ label: "Pacientes nuevos", data: {{ nuevos | tojson }}, borderColor: COLOR_VERDE,
+                   backgroundColor: "rgba(46,139,110,.12)", fill: true, tension: .3 }],
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } },
+  });
+
+  {% if top_tratamientos %}
+  new Chart(document.getElementById("grafico-tratamientos"), {
+    type: "bar",
+    data: {
+      labels: {{ top_tratamientos | map(attribute=0) | list | tojson }},
+      datasets: [{ label: "Veces realizado", data: {{ top_tratamientos | map(attribute=1) | list | tojson }},
+                   backgroundColor: COLOR_TINTA, borderRadius: 4 }],
+    },
+    options: {
+      indexAxis: "y",
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } },
+    },
+  });
+  {% endif %}
+</script>
+{% endblock %}

@@ -14,13 +14,18 @@ from flask import Flask, render_template
 # que las necesite (services/supabase_client.py lee SUPABASE_URL al importarse).
 load_dotenv()
 
-from routes.citas import bp as citas_bp          # noqa: E402
-from routes.dashboard import bp as dashboard_bp  # noqa: E402
-from routes.historial import bp as historial_bp  # noqa: E402
-from routes.odontograma import bp as odont_bp    # noqa: E402
-from routes.pacientes import bp as pacientes_bp  # noqa: E402
-from routes.recetas import bp as recetas_bp      # noqa: E402
-from services.filtros import registrar_filtros   # noqa: E402
+from routes.almacen import bp as almacen_bp                # noqa: E402
+from routes.citas import bp as citas_bp                    # noqa: E402
+from routes.consentimientos import bp as consentimientos_bp  # noqa: E402
+from routes.dashboard import bp as dashboard_bp            # noqa: E402
+from routes.finanzas import bp as finanzas_bp              # noqa: E402
+from routes.historial import bp as historial_bp            # noqa: E402
+from routes.laboratorio import bp as laboratorio_bp        # noqa: E402
+from routes.odontograma import bp as odont_bp              # noqa: E402
+from routes.pacientes import bp as pacientes_bp            # noqa: E402
+from routes.recetas import bp as recetas_bp                # noqa: E402
+from routes.reportes import bp as reportes_bp              # noqa: E402
+from services.filtros import registrar_filtros             # noqa: E402
 
 
 def crear_app() -> Flask:
@@ -41,6 +46,11 @@ def crear_app() -> Flask:
     app.register_blueprint(historial_bp)
     app.register_blueprint(odont_bp)
     app.register_blueprint(recetas_bp)
+    app.register_blueprint(almacen_bp)
+    app.register_blueprint(finanzas_bp)
+    app.register_blueprint(laboratorio_bp)
+    app.register_blueprint(consentimientos_bp)
+    app.register_blueprint(reportes_bp)
 
     # ---- Manejo de errores ------------------------------------------------
     @app.errorhandler(404)

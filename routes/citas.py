@@ -1,6 +1,6 @@
 """Agenda: registro de citas, listado por día/semana y cambio de estado."""
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from flask import (Blueprint, abort, flash, redirect, render_template, request,
                    url_for)
@@ -127,6 +127,65 @@ def eliminar(cita_id):
     sb.table("citas").delete().eq("id", cita_id).execute()
     flash("Cita eliminada de la agenda.", "info")
     return redirect(request.referrer or url_for("citas.lista"))
+
+
+@bp.route("/<int:cita_id>/recordatorio", methods=["POST"])
+def marcar_recordatorio(cita_id):
+    """
+    No hay integración con una API de WhatsApp de pago: el botón abre un
+    enlace wa.me con el mensaje ya escrito (el navegador abre WhatsApp Web
+    o la app), y esta llamada solo anota que ya se avisó, para no repetir.
+    """
+    sb.table("citas").update({"recordatorio_enviado": True}).eq("id", cita_id).execute()
+    return ("", 204)
+
+
+@bp.route("/calendario")
+def calendario():
+    """Vista mensual. ?mes=2026-03, si no se indica usa el mes actual."""
+    hoy = datetime.now().date()
+    mes_param = request.args.get("mes")
+    try:
+        anio, mes = (int(x) for x in mes_param.split("-")) if mes_param else (hoy.year, hoy.month)
+    except ValueError:
+        anio, mes = hoy.year, hoy.month
+
+    primer_dia = date(anio, mes, 1)
+    ultimo_dia = date(anio + (mes == 12), (mes % 12) + 1, 1) - timedelta(days=1)
+
+    citas = (
+        sb.table("citas").select("*, pacientes(id, nombre)")
+        .gte("fecha_hora", f"{primer_dia.isoformat()}T00:00:00")
+        .lte("fecha_hora", f"{ultimo_dia.isoformat()}T23:59:59")
+        .order("fecha_hora").execute().data or []
+    )
+    por_dia = {}
+    for c in citas:
+        por_dia.setdefault((c["fecha_hora"] or "")[:10], []).append(c)
+
+    # Cuadrícula de semanas completas (lunes a domingo) para dibujar el mes.
+    primer_lunes = primer_dia - timedelta(days=primer_dia.weekday())
+    ultimo_domingo = ultimo_dia + timedelta(days=6 - ultimo_dia.weekday())
+    semanas, semana_actual, d = [], [], primer_lunes
+    while d <= ultimo_domingo:
+        semana_actual.append(d)
+        if len(semana_actual) == 7:
+            semanas.append(semana_actual)
+            semana_actual = []
+        d += timedelta(days=1)
+
+    mes_anterior = (primer_dia - timedelta(days=1)).strftime("%Y-%m")
+    mes_siguiente = (ultimo_dia + timedelta(days=1)).strftime("%Y-%m")
+
+    nombres_mes = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+                   "agosto", "setiembre", "octubre", "noviembre", "diciembre"]
+
+    return render_template(
+        "citas/calendario.html",
+        semanas=semanas, por_dia=por_dia, mes_actual=primer_dia,
+        mes_etiqueta=f"{nombres_mes[mes - 1]} {anio}",
+        mes_anterior=mes_anterior, mes_siguiente=mes_siguiente, hoy=hoy,
+    )
 
 
 # --- Utilidades internas ---------------------------------------------------
