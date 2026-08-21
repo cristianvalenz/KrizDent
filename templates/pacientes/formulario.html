@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block titulo %}{{ 'Nuevo paciente' if modo == 'nuevo' else 'Editar paciente' }}{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">{{ 'Alta' if modo == 'nuevo' else 'Modificación' }}</p>
+    <h1>{{ 'Nuevo paciente' if modo == 'nuevo' else paciente.nombre }}</h1>
+  </div>
+  <a class="btn btn-outline-secondary btn-sm"
+     href="{{ url_for('pacientes.detalle', paciente_id=paciente.id) if paciente.id else url_for('pacientes.lista') }}">
+    Cancelar
+  </a>
+</div>
+
+<form method="post" class="card" style="max-width:760px">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-8">
+        <label class="form-label" for="nombre">Nombre completo</label>
+        <input class="form-control" id="nombre" name="nombre" required
+               value="{{ paciente.nombre or '' }}" placeholder="Apellidos y nombres">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="documento">Documento</label>
+        <input class="form-control dato" id="documento" name="documento"
+               value="{{ paciente.documento or '' }}" placeholder="DNI o CE">
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label" for="fecha_nac">Fecha de nacimiento</label>
+        <input class="form-control" type="date" id="fecha_nac" name="fecha_nac"
+               value="{{ paciente.fecha_nac | input_fecha }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="telefono">Teléfono</label>
+        <input class="form-control dato" id="telefono" name="telefono"
+               value="{{ paciente.telefono or '' }}" placeholder="9XX XXX XXX">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="email">Email</label>
+        <input class="form-control" type="email" id="email" name="email"
+               value="{{ paciente.email or '' }}">
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">Tipo de paciente</label>
+        <div class="d-flex gap-3">
+          {% for clave, etiqueta in tipos_paciente.items() %}
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="tipo_paciente"
+                     id="tipo_paciente_{{ clave }}" value="{{ clave }}"
+                     {% if (paciente.tipo_paciente or 'adulto') == clave %}checked{% endif %}>
+              <label class="form-check-label" for="tipo_paciente_{{ clave }}">{{ etiqueta }}</label>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="form-text">
+          Define cuántas piezas dibuja el odontograma: 20 temporales en niños,
+          32 permanentes en adultos.
+        </div>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label" for="direccion">Dirección</label>
+        <input class="form-control" id="direccion" name="direccion"
+               value="{{ paciente.direccion or '' }}">
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">Alergias</label>
+        <div class="d-flex gap-3 mb-2">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="tiene_alergias"
+                   id="alergias_no" value="no"
+                   {% if not paciente.alergias %}checked{% endif %}>
+            <label class="form-check-label" for="alergias_no">Sin alergias</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="tiene_alergias"
+                   id="alergias_si" value="si"
+                   {% if paciente.alergias %}checked{% endif %}>
+            <label class="form-check-label" for="alergias_si">Tiene alergias</label>
+          </div>
+        </div>
+        <textarea class="form-control" id="alergias" name="alergias" rows="2"
+                  placeholder="Penicilina, látex, anestésicos…"
+                  {% if not paciente.alergias %}disabled{% endif %}>{{ paciente.alergias or '' }}</textarea>
+        <div class="form-text">
+          «Sin alergias» aparece en verde en la ficha; «Tiene alergias» aparece en
+          rojo con la descripción que escribas aquí.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-header border-top border-bottom-0 d-flex gap-2 justify-content-end">
+    <a class="btn btn-outline-secondary btn-sm"
+       href="{{ url_for('pacientes.detalle', paciente_id=paciente.id) if paciente.id else url_for('pacientes.lista') }}">
+      Cancelar
+    </a>
+    <button class="btn btn-primary btn-sm" type="submit">
+      {{ 'Registrar paciente' if modo == 'nuevo' else 'Guardar cambios' }}
+    </button>
+  </div>
+</form>
+
+<script>
+  (function () {
+    var textarea = document.getElementById('alergias');
+    var radios = document.querySelectorAll('input[name="tiene_alergias"]');
+    function actualizar() {
+      var tiene = document.getElementById('alergias_si').checked;
+      textarea.disabled = !tiene;
+      if (!tiene) textarea.value = '';
+      else textarea.focus();
+    }
+    radios.forEach(function (r) { r.addEventListener('change', actualizar); });
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+{# Mensajes de confirmación / error que envía Flask con flash() #}
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+  {% if mensajes %}
+    <div class="mb-3">
+      {% for categoria, texto in mensajes %}
+        <div class="alert alert-{{ categoria }} alert-dismissible fade show py-2 px-3" role="alert">
+          {{ texto }}
+          <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}

@@ -1,0 +1,413 @@
+{% extends 'base.html' %}
+{% block titulo %}{{ paciente.nombre }}{% endblock %}
+
+{% block contenido %}
+
+<!-- ================= CABECERA DEL PACIENTE ================= -->
+<div class="card mb-3">
+  <div class="card-body d-flex flex-wrap gap-3 align-items-center">
+    <div class="kd-avatar grande">{{ paciente.nombre | iniciales }}</div>
+
+    <div class="flex-grow-1">
+      <p class="kd-eyebrow mb-1">Historia clínica #{{ '%05d' % paciente.id }}</p>
+      <h1 class="h4 mb-1">
+        {{ paciente.nombre }}
+        {% if not paciente.activo %}
+          <span class="badge text-bg-secondary align-middle" style="font-size:.6rem">Inactivo</span>
+        {% endif %}
+      </h1>
+      <div class="small text-muted d-flex flex-wrap gap-3">
+        <span class="dato">{{ paciente.documento or 'Sin documento' }}</span>
+        <span class="dato">{{ paciente.fecha_nac | edad }}</span>
+        <span class="dato">{{ paciente.telefono or 'Sin teléfono' }}</span>
+        <span>{{ paciente.email or 'Sin email' }}</span>
+      </div>
+      {% if paciente.direccion %}
+        <div class="small text-muted mt-1">{{ paciente.direccion }}</div>
+      {% endif %}
+    </div>
+
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm"
+         href="{{ url_for('citas.nueva', paciente_id=paciente.id) }}">Agendar cita</a>
+      <a class="btn btn-outline-secondary btn-sm"
+         href="{{ url_for('pacientes.editar', paciente_id=paciente.id) }}">Editar datos</a>
+      {% if paciente.activo %}
+        <form method="post" action="{{ url_for('pacientes.baja', paciente_id=paciente.id) }}"
+              onsubmit="return confirm('El paciente pasará a inactivos. Su historial se conserva. ¿Continuar?')">
+          <button class="btn btn-outline-secondary btn-sm" type="submit">Dar de baja</button>
+        </form>
+      {% else %}
+        <form method="post" action="{{ url_for('pacientes.reactivar', paciente_id=paciente.id) }}">
+          <button class="btn btn-outline-secondary btn-sm" type="submit">Reactivar</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if paciente.alergias %}
+    <div class="card-header border-top border-bottom-0 d-flex align-items-center gap-2"
+         style="background:#FBEAEA;color:var(--kd-lesion);border-color:#F2D4D4">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 3 2.5 20h19L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+        <path d="M12 9.5v5M12 17.2v.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+      </svg>
+      <strong class="small">Alergias:</strong>
+      <span class="small">{{ paciente.alergias }}</span>
+    </div>
+  {% else %}
+    <div class="card-header border-top border-bottom-0 d-flex align-items-center gap-2"
+         style="background:#E6F4EF;color:var(--kd-verde);border-color:#CFE9DF">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <strong class="small">Alergias:</strong>
+      <span class="small">Sin alergias</span>
+    </div>
+  {% endif %}
+</div>
+
+<!-- ================= ODONTOGRAMA ================= -->
+<div class="card mb-3">
+  <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+    <span>
+      Odontograma
+      <span class="text-muted fw-normal small">
+        · notación FDI ·
+        {{ '20 piezas temporales' if paciente.tipo_paciente == 'nino' else '32 piezas permanentes' }}
+      </span>
+    </span>
+    <div class="d-flex align-items-center gap-3">
+      <span class="kd-guardado" id="odontograma-aviso"></span>
+      <button class="btn btn-outline-secondary btn-sm" id="odontograma-reiniciar" type="button">
+        Reiniciar
+      </button>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <!-- Paleta: dos grupos, según si el estado aplica a la pieza entera o a una cara -->
+    <div class="kd-paleta-grupo mb-2">
+      <span class="kd-paleta-etiqueta small text-muted">Pieza completa:</span>
+      <div class="kd-paleta">
+        {% for clave in ["sano", "ausente", "corona_buena", "corona_mala", "remanente_radicular"] %}
+          {% set info = estados_pieza[clave] %}
+          <button class="kd-pincel" type="button" data-estado="{{ clave }}" data-nivel="pieza">
+            <span class="muestra" style="background:{{ info.color }}"></span>
+            {{ info.etiqueta }}
+          </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="kd-paleta-grupo mb-2">
+      <span class="kd-paleta-etiqueta small text-muted">Perno (independiente de la corona):</span>
+      <div class="kd-paleta">
+        <button class="kd-pincel" type="button" data-estado="perno" data-nivel="perno">
+          <span class="muestra kd-muestra-perno"></span>
+          Con perno / sin perno (clic para alternar)
+        </button>
+      </div>
+    </div>
+
+    <div class="kd-paleta-grupo mb-3">
+      <span class="kd-paleta-etiqueta small text-muted">Por cara (clic en el sector):</span>
+      <div class="kd-paleta">
+        {% for clave in ["caries", "obturado", "obturado_mal"] %}
+          {% set info = estados_cara[clave] %}
+          <button class="kd-pincel" type="button" data-estado="{{ clave }}" data-nivel="cara">
+            <span class="muestra" style="background:{{ info.color }}"></span>
+            {{ info.etiqueta }}
+          </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <p class="small text-muted mb-2">
+      "Pieza completa" pinta todo el diente al hacer clic en él. "Por cara" solo
+      pinta el sector exacto (oclusal, mesial, distal, vestibular o lingual) donde
+      hiciste clic. "Perno" es independiente de la corona: elige ese pincel y haz
+      clic en la pieza para marcarla o desmarcarla (una pieza puede tener perno
+      sin corona, o corona sin perno). Cada cambio se guarda solo.
+    </p>
+
+    <!-- El JS lee estos data-* y dibuja el SVG dentro del contenedor -->
+    <div class="kd-odontograma"
+         id="odontograma"
+         data-paciente-id="{{ paciente.id }}"
+         data-tipo-paciente="{{ paciente.tipo_paciente or 'adulto' }}"
+         data-estados='{{ odontograma | tojson }}'
+         data-caras='{{ odontograma_caras | tojson }}'
+         data-colores='{{ colores_odontograma | tojson }}'
+         data-nombres-cara='{{ caras_pieza | tojson }}'
+         data-ortodoncia='{{ ortodoncia | tojson }}'
+         data-estados-orto='{{ estados_ortodoncia | tojson }}'></div>
+
+    <!-- Aparato ortodóntico: fijo (línea recta entre 2 piezas) o removible
+         (zigzag sobre toda la arcada), según la norma del odontograma clínico. -->
+    <div class="kd-mordida mt-3">
+      <label class="small fw-semibold mb-2 d-block">Aparato ortodóntico:</label>
+
+      <div id="ortodoncia-lista" class="d-flex flex-column gap-1 mb-2"></div>
+
+      <div class="d-flex flex-wrap gap-2 align-items-end">
+        <div>
+          <label class="form-label small mb-1" for="orto-tipo">Tipo</label>
+          <select class="form-select form-select-sm kd-select-orto" id="orto-tipo">
+            {% for clave, etiqueta in tipos_ortodoncia.items() %}
+              <option value="{{ clave }}">{{ etiqueta }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label small mb-1" for="orto-arcada">Arcada</label>
+          <select class="form-select form-select-sm kd-select-orto" id="orto-arcada">
+            {% for clave, etiqueta in arcadas.items() %}
+              <option value="{{ clave }}">{{ etiqueta }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div id="orto-campos-fijo" class="d-flex gap-2">
+          <div>
+            <label class="form-label small mb-1" for="orto-desde">Desde</label>
+            <select class="form-select form-select-sm kd-select-orto-pieza" id="orto-desde"></select>
+          </div>
+          <div>
+            <label class="form-label small mb-1" for="orto-hasta">Hasta</label>
+            <select class="form-select form-select-sm kd-select-orto-pieza" id="orto-hasta"></select>
+          </div>
+        </div>
+        <div>
+          <label class="form-label small mb-1" for="orto-estado">Estado</label>
+          <select class="form-select form-select-sm kd-select-orto" id="orto-estado">
+            {% for clave, info in estados_ortodoncia.items() %}
+              <option value="{{ clave }}">{{ info.etiqueta }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm" type="button" id="orto-agregar">Agregar</button>
+        <span class="kd-guardado" id="ortodoncia-aviso"></span>
+      </div>
+      <div class="form-text mt-1">
+        "Fijo" dibuja una línea recta entre las dos piezas extremas del aparato (elige
+        primero la arcada, para que "Desde/Hasta" solo muestren esas piezas).
+        "Removible" dibuja un zigzag sobre toda la arcada elegida.
+      </div>
+    </div>
+
+    <!-- Tipo de mordida: clasificación aproximada, se guarda sola al cambiar -->
+    <div class="kd-mordida mt-3 d-flex flex-wrap align-items-center gap-2">
+      <label for="mordida-select" class="small fw-semibold mb-0">Tipo de mordida:</label>
+      <select class="form-select form-select-sm w-auto" id="mordida-select"
+              data-paciente-id="{{ paciente.id }}">
+        <option value="">Sin evaluar</option>
+        {% for clave, etiqueta in tipos_mordida.items() %}
+          <option value="{{ clave }}" {% if paciente.mordida == clave %}selected{% endif %}>
+            {{ etiqueta }}
+          </option>
+        {% endfor %}
+      </select>
+      <span class="kd-guardado" id="mordida-aviso"></span>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- ================= HISTORIAL CLÍNICO ================= -->
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Historial clínico <span class="text-muted fw-normal small">· {{ entradas | length }} entrada(s)</span></span>
+        <div class="d-flex gap-2">
+          <a class="btn btn-outline-secondary btn-sm" target="_blank"
+             href="{{ url_for('pacientes.historial_pdf', paciente_id=paciente.id) }}">
+            Descargar PDF
+          </a>
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalHistorial">
+            Nueva entrada
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body">
+        {% if entradas %}
+          <div class="kd-timeline">
+            {% for e in entradas %}
+              <div class="kd-evento">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                  <p class="kd-eyebrow mb-1">{{ e.fecha | fecha }}</p>
+                  <form method="post" action="{{ url_for('historial.eliminar', entrada_id=e.id) }}"
+                        onsubmit="return confirm('Se eliminará esta entrada y sus imágenes. ¿Continuar?')">
+                    <input type="hidden" name="paciente_id" value="{{ paciente.id }}">
+                    <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted"
+                            style="font-size:.76rem" type="submit">Eliminar</button>
+                  </form>
+                </div>
+
+                {% if e.diagnostico %}
+                  <div class="fw-semibold">{{ e.diagnostico }}</div>
+                {% endif %}
+                {% if e.tratamiento %}
+                  <div class="small mt-1"><span class="text-muted">Tratamiento:</span> {{ e.tratamiento }}</div>
+                {% endif %}
+                {% if e.notas %}
+                  <div class="small text-muted mt-1">{{ e.notas }}</div>
+                {% endif %}
+
+                {% if e.historial_imagenes %}
+                  <div class="d-flex flex-wrap gap-2 mt-2">
+                    {% for img in e.historial_imagenes %}
+                      <div class="kd-miniatura">
+                        <a href="{{ img.url }}" target="_blank" rel="noopener"
+                           title="{{ img.nombre_orig }}">
+                          <img src="{{ img.url }}" alt="{{ img.nombre_orig or 'Imagen clínica' }}" loading="lazy">
+                        </a>
+                        <form method="post"
+                              action="{{ url_for('historial.eliminar_imagen', imagen_id=img.id) }}"
+                              onsubmit="return confirm('¿Eliminar esta imagen?')">
+                          <input type="hidden" name="paciente_id" value="{{ paciente.id }}">
+                          <button class="quitar" type="submit" title="Eliminar imagen">✕</button>
+                        </form>
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="kd-vacio">
+            <strong>Sin entradas todavía</strong>
+            Registra el primer diagnóstico con el botón «Nueva entrada».
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= CITAS DEL PACIENTE ================= -->
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">Citas</div>
+      {% if citas %}
+        <div class="list-group list-group-flush">
+          {% for c in citas %}
+            <div class="list-group-item border-0">
+              <div class="d-flex justify-content-between align-items-start gap-2">
+                <div>
+                  <div class="dato small">{{ c.fecha_hora | fecha_hora }}</div>
+                  <div class="small text-muted">{{ c.motivo or 'Sin motivo' }}</div>
+                </div>
+                <span class="kd-estado estado-{{ c.estado }}">{{ c.estado }}</span>
+              </div>
+              {% if c.estado == 'pendiente' %}
+                <div class="d-flex gap-1 mt-2">
+                  <form method="post" action="{{ url_for('citas.cambiar_estado', cita_id=c.id) }}">
+                    <input type="hidden" name="estado" value="completada">
+                    <button class="btn btn-outline-secondary btn-sm py-0" style="font-size:.72rem">Completada</button>
+                  </form>
+                  <form method="post" action="{{ url_for('citas.cambiar_estado', cita_id=c.id) }}">
+                    <input type="hidden" name="estado" value="cancelada">
+                    <button class="btn btn-outline-secondary btn-sm py-0" style="font-size:.72rem">Cancelar</button>
+                  </form>
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="kd-vacio py-4">
+          <strong>Sin citas registradas</strong>
+          <a href="{{ url_for('citas.nueva', paciente_id=paciente.id) }}">Agendar una</a>.
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- ================= RECETAS MÉDICAS ================= -->
+    <div class="card mt-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Recetas médicas</span>
+        <a class="btn btn-primary btn-sm" href="{{ url_for('recetas.nueva', paciente_id=paciente.id) }}">
+          Nueva receta
+        </a>
+      </div>
+      {% if recetas %}
+        <div class="list-group list-group-flush">
+          {% for r in recetas %}
+            <div class="list-group-item border-0 d-flex justify-content-between align-items-center gap-2">
+              <div>
+                <div class="dato small">{{ r.fecha | fecha }}</div>
+                <div class="small text-muted text-truncate" style="max-width:190px">
+                  {{ r.contenido.split('\n')[0] }}
+                </div>
+              </div>
+              <a class="btn btn-outline-secondary btn-sm" target="_blank"
+                 href="{{ url_for('recetas.descargar', receta_id=r.id) }}">
+                PDF
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="kd-vacio py-4">
+          <strong>Sin recetas registradas</strong>
+          <a href="{{ url_for('recetas.nueva', paciente_id=paciente.id) }}">Generar una</a>.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: NUEVA ENTRADA DE HISTORIAL ================= -->
+<div class="modal fade" id="modalHistorial" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <form class="modal-content" method="post" enctype="multipart/form-data"
+          action="{{ url_for('historial.nueva', paciente_id=paciente.id) }}">
+      <div class="modal-header">
+        <h5 class="modal-title">Nueva entrada · {{ paciente.nombre }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label" for="fecha">Fecha</label>
+            <input class="form-control" type="date" id="fecha" name="fecha"
+                   value="{{ hoy | input_fecha }}">
+          </div>
+          <div class="col-md-8">
+            <label class="form-label" for="diagnostico">Diagnóstico</label>
+            <input class="form-control" id="diagnostico" name="diagnostico"
+                   placeholder="Caries oclusal pieza 36">
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="tratamiento">Tratamiento</label>
+            <input class="form-control" id="tratamiento" name="tratamiento"
+                   placeholder="Obturación con resina compuesta">
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="notas">Notas</label>
+            <textarea class="form-control" id="notas" name="notas" rows="3"
+                      placeholder="Anestesia, evolución, indicaciones al paciente…"></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="imagenes">Radiografías o fotos</label>
+            <input class="form-control" type="file" id="imagenes" name="imagenes"
+                   multiple accept="image/png,image/jpeg,image/webp">
+            <div class="form-text">JPG, PNG o WEBP · hasta 8 MB por archivo · puedes elegir varias.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary btn-sm" type="submit">Guardar entrada</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/odontograma.js') }}"></script>
+{% endblock %}

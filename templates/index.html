@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block titulo %}Panel{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">{{ hoy | fecha }}</p>
+    <h1>Panel del consultorio</h1>
+    <p class="subtitulo">Lo que hay que atender hoy, de un vistazo.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('pacientes.nuevo') }}">Nuevo paciente</a>
+    <a class="btn btn-primary btn-sm" href="{{ url_for('citas.nueva') }}">Agendar cita</a>
+  </div>
+</div>
+
+<!-- ---------- Cifras ---------- -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card kd-cifra">
+      <div class="valor">{{ total_pacientes }}</div>
+      <div class="rotulo">Pacientes activos</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card kd-cifra acento-azul">
+      <div class="valor">{{ citas_hoy | length }}</div>
+      <div class="rotulo">Citas de hoy</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card kd-cifra acento-rojo">
+      <div class="valor">{{ pendientes_total }}</div>
+      <div class="rotulo">Pendientes por atender</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card kd-cifra acento-verde">
+      <div class="valor">{{ resumen_piezas.get('caries', 0) }}</div>
+      <div class="rotulo">Piezas con caries</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- ---------- Citas de hoy ---------- -->
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Agenda de hoy</span>
+        <a class="small" href="{{ url_for('citas.lista') }}">Ver toda la agenda</a>
+      </div>
+      {% if citas_hoy %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr><th>Hora</th><th>Paciente</th><th>Motivo</th><th class="text-end">Estado</th></tr>
+            </thead>
+            <tbody>
+            {% for c in citas_hoy %}
+              <tr>
+                <td class="dato">{{ c.fecha_hora | hora }}</td>
+                <td>
+                  <a href="{{ url_for('pacientes.detalle', paciente_id=c.pacientes.id) }}">
+                    {{ c.pacientes.nombre }}
+                  </a>
+                </td>
+                <td class="text-muted small">{{ c.motivo or '—' }}</td>
+                <td class="text-end">
+                  <span class="kd-estado estado-{{ c.estado }}">{{ c.estado }}</span>
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="kd-vacio">
+          <strong>No hay citas para hoy</strong>
+          Agenda una desde el botón de arriba.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ---------- Columna derecha ---------- -->
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header">Próximos 7 días</div>
+      {% if proximas %}
+        <div class="list-group list-group-flush">
+          {% for c in proximas %}
+            <a class="list-group-item list-group-item-action d-flex gap-3 align-items-center border-0"
+               href="{{ url_for('pacientes.detalle', paciente_id=c.pacientes.id) }}">
+              <div class="kd-avatar">{{ c.pacientes.nombre | iniciales }}</div>
+              <div class="flex-grow-1">
+                <div class="fw-medium">{{ c.pacientes.nombre }}</div>
+                <div class="small text-muted">{{ c.motivo or 'Sin motivo registrado' }}</div>
+              </div>
+              <div class="text-end small dato text-muted">
+                {{ c.fecha_hora | fecha_corta }}<br>{{ c.fecha_hora | hora }}
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="kd-vacio py-4">
+          <strong>Semana despejada</strong>
+          Sin citas pendientes en los próximos 7 días.
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-header">Últimos pacientes registrados</div>
+      <div class="list-group list-group-flush">
+        {% for p in ultimos_pacientes %}
+          <a class="list-group-item list-group-item-action d-flex gap-3 align-items-center border-0"
+             href="{{ url_for('pacientes.detalle', paciente_id=p.id) }}">
+            <div class="kd-avatar">{{ p.nombre | iniciales }}</div>
+            <div class="flex-grow-1">
+              <div class="fw-medium">{{ p.nombre }}</div>
+              <div class="small text-muted dato">{{ p.telefono or 'Sin teléfono' }}</div>
+            </div>
+            <span class="small text-muted dato">{{ p.creado_en | fecha_corta }}</span>
+          </a>
+        {% else %}
+          <div class="kd-vacio py-4">
+            <strong>Aún no hay pacientes</strong>
+            <a href="{{ url_for('pacientes.nuevo') }}">Registra el primero</a>.
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

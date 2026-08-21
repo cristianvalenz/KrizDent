@@ -1,0 +1,498 @@
+/* =====================================================================
+   KrizDent — estilos propios sobre Bootstrap 5
+
+   La paleta sale de la convención del odontograma clínico:
+   rojo = patología por tratar, azul = trabajo ya realizado.
+   Esos dos colores mandan en toda la interfaz, no solo en el diagrama.
+   ===================================================================== */
+
+:root {
+    --kd-tinta:      #16232E;   /* casi negro azulado: texto y barra lateral */
+    --kd-tinta-suave:#2C3E4C;
+    --kd-porcelana:  #F4F7F8;   /* fondo general */
+    --kd-esmalte:    #FFFFFF;   /* tarjetas */
+    --kd-mineral:    #D8E2E7;   /* bordes */
+    --kd-clinico:    #1B6E8C;   /* azul petróleo: acción principal */
+    --kd-clinico-alt:#155971;
+    --kd-lesion:     #D64545;   /* rojo: alertas y caries */
+    --kd-oro:        #C9A227;   /* corona */
+    --kd-gris:       #8A97A0;   /* ausente */
+    --kd-verde:      #2E8B6E;   /* completado */
+
+    --kd-radio: 10px;
+    --kd-sombra: 0 1px 2px rgba(22, 35, 46, .06), 0 8px 24px rgba(22, 35, 46, .05);
+}
+
+/* ---------- Base ---------- */
+body {
+    background: var(--kd-porcelana);
+    color: var(--kd-tinta);
+    font-family: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+}
+
+h1, h2, h3, h4, h5, .titulo {
+    font-family: "Instrument Sans", system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -.015em;
+}
+
+/* Los datos duros (números de pieza, fechas, documentos) van en monoespaciada:
+   se leen en columna y no bailan al cambiar de valor. */
+.dato, .mono, td.dato {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+a { color: var(--kd-clinico); }
+a:hover { color: var(--kd-clinico-alt); }
+
+/* ---------- Barra lateral ---------- */
+.kd-sidebar {
+    background: var(--kd-tinta);
+    color: #C6D3DA;
+    width: 232px;
+    min-height: 100vh;
+    position: fixed;
+    top: 0; left: 0;
+    padding: 22px 14px;
+    z-index: 1040;
+}
+
+.kd-marca {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+    font-size: 1.22rem;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    text-decoration: none;
+    padding: 0 8px 20px;
+}
+.kd-marca:hover { color: #fff; }
+.kd-marca-logo { width: 32px; height: 32px; object-fit: contain; flex: 0 0 32px; }
+.kd-marca small {
+    display: block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .58rem;
+    font-weight: 400;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #7E93A0;
+}
+
+.kd-nav a {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 12px;
+    margin-bottom: 3px;
+    border-radius: 8px;
+    color: #C6D3DA;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background .15s, color .15s;
+}
+.kd-nav a:hover { background: rgba(255,255,255,.07); color: #fff; }
+.kd-nav a.activo { background: var(--kd-clinico); color: #fff; }
+.kd-nav a svg { flex: 0 0 18px; }
+
+.kd-sidebar-pie {
+    position: absolute;
+    bottom: 18px; left: 14px; right: 14px;
+    font-size: .72rem;
+    color: #66798A;
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding-top: 12px;
+}
+
+/* ---------- Contenido ---------- */
+.kd-contenido { margin-left: 232px; padding: 26px 30px 60px; }
+
+.kd-encabezado {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 22px;
+}
+.kd-encabezado h1 { font-size: 1.5rem; margin: 0; }
+.kd-encabezado .subtitulo { color: #6C7C88; font-size: .87rem; margin: 3px 0 0; }
+
+.kd-eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .66rem;
+    letter-spacing: .17em;
+    text-transform: uppercase;
+    color: #8A97A0;
+    margin-bottom: 3px;
+}
+
+/* ---------- Tarjetas ---------- */
+.card {
+    background: var(--kd-esmalte);
+    border: 1px solid var(--kd-mineral);
+    border-radius: var(--kd-radio);
+    box-shadow: var(--kd-sombra);
+}
+.card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--kd-mineral);
+    font-weight: 600;
+    padding: 13px 18px;
+}
+.card-body { padding: 18px; }
+
+/* Tarjetas de cifra del panel */
+.kd-cifra { padding: 18px; }
+.kd-cifra .valor {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 2.1rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -.03em;
+}
+.kd-cifra .rotulo {
+    font-size: .78rem;
+    color: #6C7C88;
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+.kd-cifra.acento-rojo .valor  { color: var(--kd-lesion); }
+.kd-cifra.acento-azul .valor  { color: var(--kd-clinico); }
+.kd-cifra.acento-verde .valor { color: var(--kd-verde); }
+
+/* ---------- Avatar de paciente ---------- */
+.kd-avatar {
+    width: 38px; height: 38px;
+    flex: 0 0 38px;
+    border-radius: 50%;
+    background: #E3EDF1;
+    color: var(--kd-clinico);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .8rem;
+    font-weight: 600;
+}
+.kd-avatar.grande { width: 60px; height: 60px; flex-basis: 60px; font-size: 1.15rem; }
+
+/* ---------- Tablas ---------- */
+.table { --bs-table-bg: transparent; margin-bottom: 0; }
+.table > :not(caption) > * > * { padding: 11px 14px; }
+.table thead th {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .68rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #7A8A95;
+    font-weight: 500;
+    border-bottom: 1px solid var(--kd-mineral);
+}
+.table tbody tr { border-bottom: 1px solid #EDF2F4; }
+.table tbody tr:last-child { border-bottom: none; }
+.table-hover tbody tr:hover { background: #F6FAFB; }
+
+/* ---------- Botones ---------- */
+.btn { border-radius: 8px; font-weight: 500; }
+.btn-primary {
+    background: var(--kd-clinico);
+    border-color: var(--kd-clinico);
+}
+.btn-primary:hover, .btn-primary:focus {
+    background: var(--kd-clinico-alt);
+    border-color: var(--kd-clinico-alt);
+}
+.btn-outline-secondary {
+    color: var(--kd-tinta-suave);
+    border-color: var(--kd-mineral);
+    background: #fff;
+}
+.btn-outline-secondary:hover {
+    background: var(--kd-tinta);
+    border-color: var(--kd-tinta);
+    color: #fff;
+}
+.btn-danger { background: var(--kd-lesion); border-color: var(--kd-lesion); }
+
+/* ---------- Estados de cita ---------- */
+.kd-estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .74rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+.kd-estado::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+.estado-pendiente  { background: #FDF3E3; color: #8A6212; }
+.estado-completada { background: #E6F4EF; color: var(--kd-verde); }
+.estado-cancelada  { background: #FBEAEA; color: var(--kd-lesion); }
+
+/* ---------- Formularios ---------- */
+.form-label {
+    font-size: .78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #5C6D79;
+    margin-bottom: 5px;
+}
+.form-control, .form-select {
+    border-radius: 8px;
+    border-color: var(--kd-mineral);
+    padding: 9px 12px;
+    font-size: .94rem;
+}
+/* El <select> necesita más espacio a la derecha que un <input>: ahí va su
+   flecha nativa. Con el padding parejo de arriba, el texto se le encima. */
+.form-select {
+    padding-right: 2.25rem;
+    background-position: right .75rem center;
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--kd-clinico);
+    box-shadow: 0 0 0 3px rgba(27, 110, 140, .13);
+}
+.form-text { font-size: .78rem; color: #7A8A95; }
+
+/* ---------- Estado vacío ---------- */
+.kd-vacio {
+    text-align: center;
+    padding: 44px 20px;
+    color: #7A8A95;
+}
+.kd-vacio strong { display: block; color: var(--kd-tinta); margin-bottom: 5px; }
+
+/* =====================================================================
+   ODONTOGRAMA
+   ===================================================================== */
+.kd-odontograma {
+    background: var(--kd-esmalte);
+    border-radius: var(--kd-radio);
+    overflow-x: auto;      /* en móvil se desplaza en horizontal, no se deforma */
+    padding: 6px 0;
+}
+.kd-odontograma svg { display: block; min-width: 560px; margin: 0 auto; }
+
+/* Cada diente es un <g> con clase .diente, dividido en 5 caras clickeables */
+.diente { cursor: pointer; }
+.diente .borde-diente {
+    fill: none;
+    stroke: #A9BAC4;
+    stroke-width: 1.4;
+    pointer-events: none;
+}
+.diente .cara-diente {
+    fill: #FFFFFF;
+    stroke: #C6D0D6;
+    stroke-width: .75;
+    transition: fill .12s, stroke .12s;
+}
+.diente:hover .borde-diente { stroke: var(--kd-clinico); stroke-width: 2.2; }
+.diente:focus { outline: none; }
+.diente:focus-visible .borde-diente {
+    stroke: var(--kd-tinta);
+    stroke-width: 2.6;
+}
+.diente .numero-pieza {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10px;
+    fill: #7A8A95;
+    text-anchor: middle;
+    user-select: none;
+}
+.diente.marcado .numero-pieza { fill: var(--kd-tinta); font-weight: 600; }
+
+/* Silueta anatómica decorativa: solo referencia visual, no es clickeable.
+   Refleja el mismo estado que el cuadro de caras (ver data-pieza en el JS). */
+.diente-silueta .silueta-corona,
+.diente-silueta .silueta-raiz {
+    fill: #F3F5F7;
+    stroke: #C6D0D6;
+    stroke-width: 1;
+    transition: fill .12s, opacity .12s;
+}
+
+/* Ausente: no queda nada de la pieza — corona y raíz se apagan por igual. */
+.diente-silueta[data-estado="ausente"] .silueta-corona,
+.diente-silueta[data-estado="ausente"] .silueta-raiz {
+    fill: #E7ECEF;
+    stroke-dasharray: 3 2;
+    opacity: .5;
+}
+
+/* Remanente radicular: la corona está destruida (se apaga), pero la raíz
+   sigue en el hueso — se resalta en el mismo color que el cuadro de caras. */
+.diente-silueta[data-estado="remanente_radicular"] .silueta-corona {
+    fill: #E7ECEF;
+    stroke-dasharray: 2 2;
+    opacity: .35;
+}
+.diente-silueta[data-estado="remanente_radicular"] .silueta-raiz {
+    fill: #D64545;
+    stroke: #A93636;
+    stroke-width: 1.2;
+    opacity: 1;
+}
+
+/* Corona (prótesis fija): se resalta el contorno sobre la corona anatómica. */
+.diente-silueta[data-estado="corona_buena"] .silueta-corona {
+    stroke: #2E8B6E;
+    stroke-width: 1.6;
+}
+.diente-silueta[data-estado="corona_mala"] .silueta-corona {
+    stroke: #E08E3C;
+    stroke-width: 1.6;
+}
+
+/* La X de pieza ausente se dibuja encima del cuadro de caras */
+.diente .marca-ausente { stroke: #5A6B76; stroke-width: 2; display: none; }
+.diente[data-estado="ausente"] .marca-ausente { display: block; }
+.diente[data-estado="ausente"] .cara-diente { fill: #E7ECEF; }
+
+/* Marca de perno: mango + cabeza redondeada, independiente del estado de la pieza */
+.diente .marca-perno { display: none; }
+.diente[data-perno="true"] .marca-perno { display: block; }
+.diente .perno-mango { stroke: var(--kd-tinta); stroke-width: 1.6; }
+.diente .perno-cabeza { fill: var(--kd-tinta); }
+
+.kd-cuadrante-rotulo {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 9px;
+    letter-spacing: .1em;
+    fill: #A9BAC4;
+    text-anchor: middle;
+}
+.kd-eje-central { stroke: var(--kd-mineral); stroke-width: 1; }
+
+/* Paleta de estados: se elige uno y luego se pintan los dientes */
+.kd-paleta-grupo { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.kd-paleta-etiqueta { min-width: 150px; }
+.kd-paleta { display: flex; flex-wrap: wrap; gap: 8px; }
+.kd-pincel {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: 1.5px solid var(--kd-mineral);
+    background: #fff;
+    border-radius: 999px;
+    padding: 6px 13px 6px 8px;
+    font-size: .82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color .13s, box-shadow .13s;
+}
+.kd-pincel:hover { border-color: #A9BAC4; }
+.kd-pincel.activo {
+    border-color: var(--kd-tinta);
+    box-shadow: 0 0 0 3px rgba(22, 35, 46, .09);
+}
+.kd-pincel .muestra {
+    width: 15px; height: 15px;
+    border-radius: 4px;
+    border: 1px solid rgba(22, 35, 46, .22);
+}
+
+/* Muestra del pincel de perno: una línea vertical, no un color de estado */
+.kd-muestra-perno {
+    background: #fff;
+    position: relative;
+}
+.kd-muestra-perno::after {
+    content: "";
+    position: absolute;
+    left: 50%; top: 2px; bottom: 2px;
+    width: 2px;
+    background: var(--kd-tinta);
+    transform: translateX(-50%);
+}
+
+.kd-mordida { border-top: 1px solid var(--kd-mineral); padding-top: 12px; }
+
+/* Los <select> del formulario de ortodoncia se encogían al ancho del texto
+   y dejaban la flecha nativa pegada al número, viéndose fea/recortada. */
+.kd-select-orto { min-width: 116px; }
+.kd-select-orto-pieza { min-width: 72px; }
+
+.kd-guardado {
+    font-size: .78rem;
+    color: var(--kd-verde);
+    opacity: 0;
+    transition: opacity .25s;
+}
+.kd-guardado.visible { opacity: 1; }
+.kd-guardado.error { color: var(--kd-lesion); }
+
+/* ---------- Miniaturas de radiografías ---------- */
+.kd-miniatura {
+    position: relative;
+    width: 96px; height: 96px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--kd-mineral);
+    background: #0E1A22;
+}
+.kd-miniatura img { width: 100%; height: 100%; object-fit: cover; }
+.kd-miniatura .quitar {
+    position: absolute; top: 4px; right: 4px;
+    border: none;
+    background: rgba(22, 35, 46, .82);
+    color: #fff;
+    border-radius: 50%;
+    width: 21px; height: 21px;
+    line-height: 1;
+    font-size: .72rem;
+    padding: 0;
+}
+
+/* ---------- Línea de tiempo del historial ---------- */
+.kd-timeline { position: relative; padding-left: 26px; }
+.kd-timeline::before {
+    content: "";
+    position: absolute;
+    left: 6px; top: 6px; bottom: 6px;
+    width: 2px;
+    background: var(--kd-mineral);
+}
+.kd-evento { position: relative; padding-bottom: 22px; }
+.kd-evento::before {
+    content: "";
+    position: absolute;
+    left: -25px; top: 6px;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2.5px solid var(--kd-clinico);
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 991.98px) {
+    .kd-sidebar {
+        position: static;
+        width: 100%;
+        min-height: auto;
+        padding: 12px 14px;
+    }
+    .kd-sidebar-pie { display: none; }
+    .kd-nav { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px; }
+    .kd-nav a { white-space: nowrap; padding: 7px 12px; }
+    .kd-marca { padding-bottom: 12px; }
+    .kd-contenido { margin-left: 0; padding: 18px 16px 50px; }
+    .kd-encabezado h1 { font-size: 1.25rem; }
+}
+
+/* Respeta la preferencia del sistema de reducir animaciones */
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+}

@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block titulo %}Nueva receta · {{ paciente.nombre }}{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">Receta médica</p>
+    <h1>{{ paciente.nombre }}</h1>
+  </div>
+  <a class="btn btn-outline-secondary btn-sm"
+     href="{{ url_for('pacientes.detalle', paciente_id=paciente.id) }}">
+    Cancelar
+  </a>
+</div>
+
+<form method="post" id="form-receta" class="card" style="max-width:760px">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-12">
+        <label class="form-label" for="contenido">Indicaciones (Rp.)</label>
+        <textarea class="form-control" id="contenido" name="contenido" rows="8" required
+                  placeholder="Amoxicilina 500 mg — 1 cápsula cada 8 horas por 7 días&#10;Ibuprofeno 400 mg — 1 tableta cada 8 horas si hay dolor"
+                  autofocus></textarea>
+        <div class="form-text">
+          Una indicación por línea. Esto va dentro del recuadro «Rp.» del PDF, tal como lo escribas.
+        </div>
+      </div>
+
+      <div class="col-md-8">
+        <label class="form-label" for="odontologo_nombre">Odontólogo(a)</label>
+        <input class="form-control" id="odontologo_nombre" name="odontologo_nombre"
+               placeholder="Nombres y apellidos de quien firma la receta">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="odontologo_cop">N.° Reg. CCDP</label>
+        <input class="form-control dato" id="odontologo_cop" name="odontologo_cop"
+               placeholder="Tu número de colegiatura">
+      </div>
+      <div class="col-12">
+        <div class="form-text mt-0">
+          El sello del PDF se arma en 3 líneas, con el formato oficial vigente:
+          nombre completo · «Cirujano Dentista» · «Reg. CCDP N.° [tu número]».
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-header border-top border-bottom-0 d-flex align-items-center gap-2 justify-content-end">
+    <span class="kd-guardado" id="receta-aviso"></span>
+    <a class="btn btn-outline-secondary btn-sm"
+       href="{{ url_for('pacientes.detalle', paciente_id=paciente.id) }}">
+      Cancelar
+    </a>
+    <button class="btn btn-primary btn-sm" type="submit" id="btn-generar">Generar receta</button>
+  </div>
+</form>
+
+<script>
+  (function () {
+    var form = document.getElementById('form-receta');
+    var boton = document.getElementById('btn-generar');
+    var aviso = document.getElementById('receta-aviso');
+
+    function mostrarAviso(texto, esError) {
+      aviso.textContent = texto;
+      aviso.classList.toggle('error', !!esError);
+      aviso.classList.add('visible');
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      // La pestaña se abre AQUÍ, dentro del clic del usuario — si se abriera
+      // después del fetch, la mayoría de navegadores la bloquearían por ser
+      // una ventana emergente fuera de un gesto directo del usuario.
+      var pestanaPdf = window.open('', '_blank');
+
+      boton.disabled = true;
+      mostrarAviso('Generando…');
+
+      fetch(form.action || window.location.href, {
+        method: 'POST',
+        body: new FormData(form),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok) {
+            if (pestanaPdf) pestanaPdf.location = data.pdf_url;
+            mostrarAviso('Receta generada — se abrió en una pestaña nueva.');
+            form.reset();
+          } else {
+            if (pestanaPdf) pestanaPdf.close();
+            mostrarAviso(data.error || 'No se pudo generar la receta', true);
+          }
+        })
+        .catch(function () {
+          if (pestanaPdf) pestanaPdf.close();
+          mostrarAviso('Sin conexión con el servidor', true);
+        })
+        .finally(function () {
+          boton.disabled = false;
+        });
+    });
+  })();
+</script>
+{% endblock %}

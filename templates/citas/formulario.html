@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block titulo %}{{ 'Agendar cita' if modo == 'nueva' else 'Editar cita' }}{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">Agenda</p>
+    <h1>{{ 'Agendar cita' if modo == 'nueva' else 'Editar cita' }}</h1>
+  </div>
+  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('citas.lista') }}">Cancelar</a>
+</div>
+
+<form method="post" class="card" style="max-width:680px">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-12">
+        <label class="form-label" for="paciente_id">Paciente</label>
+        <select class="form-select" id="paciente_id" name="paciente_id" required>
+          <option value="">Elige un paciente…</option>
+          {% for p in pacientes %}
+            <option value="{{ p.id }}" {{ 'selected' if cita.paciente_id == p.id }}>{{ p.nombre }}</option>
+          {% endfor %}
+        </select>
+        {% if not pacientes %}
+          <div class="form-text">
+            No hay pacientes activos. <a href="{{ url_for('pacientes.nuevo') }}">Registra uno primero</a>.
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="col-md-7">
+        <label class="form-label" for="fecha_hora">Fecha y hora</label>
+        <input class="form-control" type="datetime-local" id="fecha_hora" name="fecha_hora"
+               required value="{{ cita.fecha_hora | input_datetime }}">
+      </div>
+      <div class="col-md-5">
+        <label class="form-label" for="duracion_min">Duración (min)</label>
+        <input class="form-control dato" type="number" id="duracion_min" name="duracion_min"
+               min="10" step="5" value="{{ cita.duracion_min or 30 }}">
+      </div>
+
+      <div class="col-md-7">
+        <label class="form-label" for="motivo">Motivo</label>
+        <input class="form-control" id="motivo" name="motivo"
+               value="{{ cita.motivo or '' }}" placeholder="Profilaxis, control, endodoncia…">
+      </div>
+      <div class="col-md-5">
+        <label class="form-label" for="estado">Estado</label>
+        <select class="form-select" id="estado" name="estado">
+          {% for clave, info in estados.items() %}
+            <option value="{{ clave }}" {{ 'selected' if (cita.estado or 'pendiente') == clave }}>
+              {{ info.etiqueta }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label" for="notas">Notas</label>
+        <textarea class="form-control" id="notas" name="notas" rows="2">{{ cita.notas or '' }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-header border-top border-bottom-0 d-flex gap-2 justify-content-end">
+    {% if modo == 'editar' %}
+      <button class="btn btn-outline-secondary btn-sm" type="button"
+              onclick="document.getElementById('form-eliminar').submit()">Eliminar cita</button>
+    {% endif %}
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('citas.lista') }}">Cancelar</a>
+    <button class="btn btn-primary btn-sm" type="submit">
+      {{ 'Agendar' if modo == 'nueva' else 'Guardar cambios' }}
+    </button>
+  </div>
+</form>
+
+{% if modo == 'editar' %}
+  <!-- Formulario aparte: no se puede anidar un <form> dentro de otro -->
+  <form id="form-eliminar" method="post" class="d-none"
+        action="{{ url_for('citas.eliminar', cita_id=cita.id) }}"
+        onsubmit="return confirm('Se eliminará la cita de la agenda. ¿Continuar?')"></form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,7 @@
+# KrizDent — dependencias
+Flask==3.0.3
+python-dotenv==1.0.1
+supabase==2.15.1
+gunicorn==22.0.0        # solo si algún día lo despliegas fuera de tu PC
+reportlab==5.0.1         # genera el PDF de la receta médica
+Pillow==12.3.0            # reportlab la usa para insertar el logo en el PDF

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block titulo %}Recetas médicas{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">{{ recetas | length }} receta(s)</p>
+    <h1>Recetas médicas</h1>
+    <p class="subtitulo">Todas las recetas generadas, de todos los pacientes.</p>
+  </div>
+  <form class="d-flex" role="search">
+    <input class="form-control form-control-sm" type="search" name="q" value="{{ q }}"
+           placeholder="Buscar por paciente, documento, odontólogo o contenido…"
+           style="min-width:320px">
+  </form>
+</div>
+
+<div class="card">
+  {% if recetas %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Fecha y hora</th>
+            <th>Paciente</th>
+            <th>Documento</th>
+            <th>Indicaciones</th>
+            <th>Odontólogo(a)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in recetas %}
+            {% set p = r.pacientes or {} %}
+            <tr>
+              <td class="dato small">{{ r.creado_en | fecha_hora }}</td>
+              <td>
+                {% if p.id %}
+                  <a href="{{ url_for('pacientes.detalle', paciente_id=p.id) }}">{{ p.nombre }}</a>
+                {% else %}
+                  <span class="text-muted">Paciente eliminado</span>
+                {% endif %}
+              </td>
+              <td class="dato small">{{ p.documento or '—' }}</td>
+              <td class="small text-muted text-truncate" style="max-width:280px">
+                {{ r.contenido.split('\n')[0] }}
+              </td>
+              <td class="small">{{ r.odontologo_nombre or '—' }}</td>
+              <td class="text-end">
+                <a class="btn btn-outline-secondary btn-sm" target="_blank"
+                   href="{{ url_for('recetas.descargar', receta_id=r.id) }}">
+                  PDF
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="kd-vacio py-5">
+      <strong>{{ 'Sin resultados' if q else 'Todavía no hay recetas registradas' }}</strong>
+      {% if q %}
+        <span>Prueba con otro nombre, documento u odontólogo.</span>
+      {% else %}
+        <span>Ábrelas desde la ficha de cada paciente con «Nueva receta».</span>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
