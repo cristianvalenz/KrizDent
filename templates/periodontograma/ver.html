@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block titulo %}Periodontograma · {{ paciente.nombre }}{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">{{ p.fecha | fecha }}</p>
+    <h1>Periodontograma · {{ paciente.nombre }}</h1>
+  </div>
+  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('pacientes.detalle', paciente_id=paciente.id) }}">Volver a la ficha</a>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card kd-cifra acento-rojo">
+      <div class="kd-eyebrow">Índice de placa (%IP)</div>
+      <div class="valor">{{ p.indice_placa }}%</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card kd-cifra acento-rojo">
+      <div class="kd-eyebrow">Sangrado al sondaje (%SAS)</div>
+      <div class="valor">{{ p.indice_sangrado }}%</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card kd-cifra">
+      <div class="kd-eyebrow">Sitios con supuración</div>
+      <div class="valor">{{ p.sitios_supuracion }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Detalle por pieza</div>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead><tr><th>Pieza</th><th>Placa</th><th>Sangrado</th><th>Supuración</th><th>Sondaje</th></tr></thead>
+      <tbody>
+        {% for pieza in fila_superior + fila_inferior %}
+          {% set d = p.datos.get(pieza | string) %}
+          {% if d %}
+            <tr>
+              <td class="dato small">{{ pieza }}</td>
+              <td>{{ '✓' if d.placa else '—' }}</td>
+              <td>{{ '✓' if d.sangrado else '—' }}</td>
+              <td>{{ '✓' if d.supuracion else '—' }}</td>
+              <td class="dato">{{ d.sondaje if d.sondaje is not none else '—' }} mm</td>
+            </tr>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if p.notas %}
+  <div class="card mt-3">
+    <div class="card-header">Notas</div>
+    <div class="card-body small">{{ p.notas }}</div>
+  </div>
+{% endif %}
+{% endblock %}

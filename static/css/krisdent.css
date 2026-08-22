@@ -434,6 +434,29 @@ a:hover { color: var(--kd-clinico-alt); }
 }
 .kd-firma-caja canvas { display: block; width: 100%; height: 220px; cursor: crosshair; }
 
+/* Pestañas de la ficha del paciente (sub-navegación tipo Dentalink) */
+.kd-tabs-paciente {
+    position: sticky;
+    top: 16px;
+}
+.kd-tabs-paciente .nav-link {
+    text-align: left;
+    color: var(--kd-tinta-suave);
+    font-size: .86rem;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 9px 12px;
+    margin-bottom: 2px;
+}
+.kd-tabs-paciente .nav-link:hover { background: var(--kd-porcelana); }
+.kd-tabs-paciente .nav-link.active {
+    background: var(--kd-clinico);
+    color: #fff;
+}
+@media (max-width: 991px) {
+    .kd-tabs-paciente { position: static; flex-direction: row !important; flex-wrap: wrap; }
+}
+
 /* Calendario mensual de citas */
 .kd-calendario td { width: 14.28%; height: 108px; vertical-align: top; padding: 6px; }
 .kd-calendario .kd-dia-fuera { background: #FAFBFC; color: #B7C2C9; }

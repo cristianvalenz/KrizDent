@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block titulo %}Profesionales{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">{{ profesionales | length }} registrado(s)</p>
+    <h1>Profesionales</h1>
+    <p class="subtitulo">Odontólogos que se pueden asignar a citas y tratamientos.</p>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <form method="post" action="{{ url_for('profesionales.nuevo') }}" class="card">
+      <div class="card-header">Nuevo profesional</div>
+      <div class="card-body d-flex gap-2">
+        <input class="form-control" name="nombre" placeholder="Dr(a). Nombre Apellido" required>
+        <button class="btn btn-primary btn-sm text-nowrap" type="submit">Agregar</button>
+      </div>
+    </form>
+  </div>
+  <div class="col-lg-7">
+    <div class="card">
+      {% if profesionales %}
+        <div class="list-group list-group-flush">
+          {% for p in profesionales %}
+            <div class="list-group-item d-flex justify-content-between align-items-center border-0">
+              <span>
+                {{ p.nombre }}
+                {% if not p.activo %}<span class="badge text-bg-secondary ms-1" style="font-size:.62rem">Inactivo</span>{% endif %}
+              </span>
+              <form method="post" action="{{ url_for('profesionales.cambiar_estado', profesional_id=p.id) }}">
+                <input type="hidden" name="activo" value="{{ '0' if p.activo else '1' }}">
+                <button class="btn btn-outline-secondary btn-sm" type="submit">
+                  {{ 'Desactivar' if p.activo else 'Reactivar' }}
+                </button>
+              </form>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="kd-vacio py-4">
+          <strong>Sin profesionales registrados</strong>
+          Agrega el primero con el formulario de la izquierda.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

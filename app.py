@@ -23,6 +23,8 @@ from routes.historial import bp as historial_bp            # noqa: E402
 from routes.laboratorio import bp as laboratorio_bp        # noqa: E402
 from routes.odontograma import bp as odont_bp              # noqa: E402
 from routes.pacientes import bp as pacientes_bp            # noqa: E402
+from routes.periodontograma import bp as periodontograma_bp  # noqa: E402
+from routes.profesionales import bp as profesionales_bp    # noqa: E402
 from routes.recetas import bp as recetas_bp                # noqa: E402
 from routes.reportes import bp as reportes_bp              # noqa: E402
 from services.filtros import registrar_filtros             # noqa: E402
@@ -51,6 +53,8 @@ def crear_app() -> Flask:
     app.register_blueprint(laboratorio_bp)
     app.register_blueprint(consentimientos_bp)
     app.register_blueprint(reportes_bp)
+    app.register_blueprint(periodontograma_bp)
+    app.register_blueprint(profesionales_bp)
 
     # ---- Manejo de errores ------------------------------------------------
     @app.errorhandler(404)

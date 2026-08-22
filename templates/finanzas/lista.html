@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block titulo %}Presupuestos{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">{{ tratamientos | length }} línea(s)</p>
+    <h1>Presupuestos</h1>
+    <p class="subtitulo">Todos los tratamientos presupuestados, de todos los pacientes.</p>
+  </div>
+</div>
+
+<form class="card mb-3" method="get" action="{{ url_for('finanzas.lista') }}">
+  <div class="card-body d-flex flex-wrap gap-2 align-items-end py-3">
+    <div>
+      <label class="form-label" for="paciente">Paciente</label>
+      <input class="form-control form-control-sm" id="paciente" name="paciente" value="{{ paciente_q }}" placeholder="Buscar paciente">
+    </div>
+    <div>
+      <label class="form-label" for="estado">Estado</label>
+      <select class="form-select form-select-sm" id="estado" name="estado">
+        <option value="">Todos</option>
+        {% for clave, info in estados_tratamiento.items() %}
+          <option value="{{ clave }}" {{ 'selected' if estado == clave }}>{{ info.etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label" for="profesional_id">Profesional</label>
+      <select class="form-select form-select-sm" id="profesional_id" name="profesional_id">
+        <option value="">Todos</option>
+        {% for p in profesionales %}
+          <option value="{{ p.id }}" {{ 'selected' if profesional_id == p.id | string }}>{{ p.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" type="submit">Filtrar</button>
+    {% if paciente_q or estado or profesional_id %}
+      <a class="btn btn-link btn-sm text-decoration-none" href="{{ url_for('finanzas.lista') }}">Limpiar</a>
+    {% endif %}
+  </div>
+</form>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card kd-cifra">
+      <div class="kd-eyebrow">Presupuestado</div>
+      <div class="valor">S/ {{ '%.2f' | format(total_presupuestado) }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card kd-cifra acento-verde">
+      <div class="kd-eyebrow">Cobrado</div>
+      <div class="valor">S/ {{ '%.2f' | format(total_cobrado) }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card kd-cifra acento-rojo">
+      <div class="kd-eyebrow">Falta por cobrar</div>
+      <div class="valor">S/ {{ '%.2f' | format(total_falta) }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  {% if tratamientos %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Paciente</th>
+            <th>Tratamiento</th>
+            <th>Estado</th>
+            <th>Profesional</th>
+            <th>Fecha</th>
+            <th>Presupuestado</th>
+            <th>Cobrado</th>
+            <th>Falta</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tratamientos %}
+            <tr>
+              <td>
+                {% if t.pacientes %}
+                  <a href="{{ url_for('pacientes.detalle', paciente_id=t.pacientes.id) }}">{{ t.pacientes.nombre }}</a>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td class="small">{{ t.descripcion }}{% if t.pieza %} <span class="dato text-muted">· pieza {{ t.pieza }}</span>{% endif %}</td>
+              <td><span class="kd-estado {{ estados_tratamiento[t.estado].clase }}">{{ estados_tratamiento[t.estado].etiqueta }}</span></td>
+              <td class="small">{{ t.profesionales.nombre if t.profesionales else '—' }}</td>
+              <td class="dato small">{{ t.fecha | fecha }}</td>
+              <td class="dato small">S/ {{ '%.2f' | format(t.costo) }}</td>
+              <td class="dato small" style="color:var(--kd-verde)">S/ {{ '%.2f' | format(t.cobrado) }}</td>
+              <td class="dato small" style="color:{{ 'var(--kd-lesion)' if t.falta > 0 else 'inherit' }}">S/ {{ '%.2f' | format(t.falta) }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="kd-vacio py-5">
+      <strong>{{ 'Sin resultados' if (paciente_q or estado or profesional_id) else 'Todavía no hay tratamientos presupuestados' }}</strong>
+      <span>Se agregan desde la ficha de cada paciente.</span>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

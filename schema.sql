@@ -4,6 +4,16 @@
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
+-- 0. PROFESIONALES (odontólogos que se asignan a citas y tratamientos)
+-- ---------------------------------------------------------------------
+create table if not exists profesionales (
+    id        bigserial primary key,
+    nombre    text not null,
+    activo    boolean not null default true,
+    creado_en timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------------------
 -- 1. PACIENTES
 -- ---------------------------------------------------------------------
 create table if not exists pacientes (
@@ -44,6 +54,7 @@ create table if not exists citas (
     -- El recordatorio se envía manualmente por WhatsApp (enlace wa.me con el
     -- mensaje ya escrito); esto solo evita reenviarlo dos veces por error.
     recordatorio_enviado boolean not null default false,
+    profesional_id bigint references profesionales(id) on delete set null,
     creado_en     timestamptz not null default now()
 );
 
@@ -196,6 +207,10 @@ create table if not exists tratamientos (
     fecha        date not null default current_date,
     estado       text not null default 'pendiente'
                  check (estado in ('pendiente', 'en_proceso', 'completado', 'cancelado')),
+    profesional_id bigint references profesionales(id) on delete set null,
+    -- Vincula la línea de presupuesto con la pieza que la originó, para poder
+    -- crear el presupuesto directo desde un hallazgo del odontograma.
+    pieza        smallint,
     creado_en    timestamptz not null default now()
 );
 create index if not exists idx_tratamientos_paciente on tratamientos (paciente_id);
@@ -243,6 +258,37 @@ create table if not exists trabajos_laboratorio (
     creado_en         timestamptz not null default now()
 );
 create index if not exists idx_laboratorio_paciente on trabajos_laboratorio (paciente_id);
+
+-- ---------------------------------------------------------------------
+-- 4f. VERSIONES DEL ODONTOGRAMA (Inicial / Alta — "Evolución" es lo vivo)
+-- ---------------------------------------------------------------------
+create table if not exists odontograma_versiones (
+    id                bigserial primary key,
+    paciente_id       bigint not null references pacientes(id) on delete cascade,
+    tipo              text not null check (tipo in ('inicial', 'alta')),
+    fecha             date not null default current_date,
+    odontograma       jsonb not null,
+    odontograma_caras jsonb not null,
+    ortodoncia        jsonb not null default '[]',
+    creado_en         timestamptz not null default now(),
+    unique (paciente_id, tipo)
+);
+
+-- ---------------------------------------------------------------------
+-- 4g. PERIODONTOGRAMA (carta periodontal: placa, sangrado, sondaje)
+-- ---------------------------------------------------------------------
+create table if not exists periodontogramas (
+    id                 bigserial primary key,
+    paciente_id        bigint not null references pacientes(id) on delete cascade,
+    fecha              date not null default current_date,
+    indice_placa       numeric(5,2) not null default 0,
+    indice_sangrado    numeric(5,2) not null default 0,
+    sitios_supuracion  int not null default 0,
+    datos              jsonb not null default '{}',
+    notas              text,
+    creado_en          timestamptz not null default now()
+);
+create index if not exists idx_periodontogramas_paciente on periodontogramas (paciente_id, fecha desc);
 
 -- ---------------------------------------------------------------------
 -- 5. ÍNDICES

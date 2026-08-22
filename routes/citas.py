@@ -22,15 +22,18 @@ def lista():
     desde = request.args.get("desde") or hoy.isoformat()
     hasta = request.args.get("hasta") or (hoy + timedelta(days=14)).isoformat()
     estado = request.args.get("estado") or ""
+    profesional_id = request.args.get("profesional_id") or ""
 
     consulta = (
         sb.table("citas")
-        .select("*, pacientes(id, nombre, telefono)")
+        .select("*, pacientes(id, nombre, telefono), profesionales(id, nombre)")
         .gte("fecha_hora", f"{desde}T00:00:00")
         .lte("fecha_hora", f"{hasta}T23:59:59")
     )
     if estado in ESTADOS_CITA:
         consulta = consulta.eq("estado", estado)
+    if profesional_id:
+        consulta = consulta.eq("profesional_id", int(profesional_id))
 
     citas = consulta.order("fecha_hora").execute().data or []
 
@@ -48,7 +51,9 @@ def lista():
         desde=desde,
         hasta=hasta,
         estado=estado,
+        profesional_id=profesional_id,
         estados=ESTADOS_CITA,
+        profesionales=_profesionales_activos(),
     )
 
 
@@ -62,6 +67,8 @@ def nueva():
             flash("Elige un paciente y una fecha para la cita.", "danger")
             return redirect(url_for("citas.nueva"))
 
+        profesional_id = request.form.get("profesional_id")
+
         sb.table("citas").insert({
             "paciente_id": int(paciente_id),
             "fecha_hora": fecha_hora,           # '2026-03-14T09:30' del input datetime-local
@@ -69,6 +76,7 @@ def nueva():
             "motivo": (request.form.get("motivo") or "").strip() or None,
             "estado": request.form.get("estado") or "pendiente",
             "notas": (request.form.get("notas") or "").strip() or None,
+            "profesional_id": int(profesional_id) if profesional_id else None,
         }).execute()
 
         flash("Cita agendada.", "success")
@@ -79,6 +87,7 @@ def nueva():
         cita={"paciente_id": request.args.get("paciente_id", type=int)},
         pacientes=_pacientes_activos(),
         estados=ESTADOS_CITA,
+        profesionales=_profesionales_activos(),
         modo="nueva",
     )
 
@@ -88,6 +97,7 @@ def editar(cita_id):
     cita = _obtener_cita(cita_id)
 
     if request.method == "POST":
+        profesional_id = request.form.get("profesional_id")
         sb.table("citas").update({
             "paciente_id": int(request.form["paciente_id"]),
             "fecha_hora": request.form["fecha_hora"],
@@ -95,6 +105,7 @@ def editar(cita_id):
             "motivo": (request.form.get("motivo") or "").strip() or None,
             "estado": request.form.get("estado") or "pendiente",
             "notas": (request.form.get("notas") or "").strip() or None,
+            "profesional_id": int(profesional_id) if profesional_id else None,
         }).eq("id", cita_id).execute()
 
         flash("Cita actualizada.", "success")
@@ -105,6 +116,7 @@ def editar(cita_id):
         cita=cita,
         pacientes=_pacientes_activos(),
         estados=ESTADOS_CITA,
+        profesionales=_profesionales_activos(),
         modo="editar",
     )
 
@@ -152,13 +164,16 @@ def calendario():
 
     primer_dia = date(anio, mes, 1)
     ultimo_dia = date(anio + (mes == 12), (mes % 12) + 1, 1) - timedelta(days=1)
+    profesional_id = request.args.get("profesional_id") or ""
 
-    citas = (
-        sb.table("citas").select("*, pacientes(id, nombre)")
+    consulta = (
+        sb.table("citas").select("*, pacientes(id, nombre), profesionales(id, nombre)")
         .gte("fecha_hora", f"{primer_dia.isoformat()}T00:00:00")
         .lte("fecha_hora", f"{ultimo_dia.isoformat()}T23:59:59")
-        .order("fecha_hora").execute().data or []
     )
+    if profesional_id:
+        consulta = consulta.eq("profesional_id", int(profesional_id))
+    citas = consulta.order("fecha_hora").execute().data or []
     por_dia = {}
     for c in citas:
         por_dia.setdefault((c["fecha_hora"] or "")[:10], []).append(c)
@@ -180,11 +195,23 @@ def calendario():
     nombres_mes = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
                    "agosto", "setiembre", "octubre", "noviembre", "diciembre"]
 
+    # Cuántas citas tiene cada profesional este mes, para la barra lateral
+    # de "Especialistas" (igual que el conteo por especialista de Dentalink).
+    conteo_profesional = {}
+    sin_asignar = 0
+    for c in citas:
+        if c.get("profesionales"):
+            conteo_profesional[c["profesionales"]["nombre"]] = conteo_profesional.get(c["profesionales"]["nombre"], 0) + 1
+        else:
+            sin_asignar += 1
+
     return render_template(
         "citas/calendario.html",
         semanas=semanas, por_dia=por_dia, mes_actual=primer_dia,
         mes_etiqueta=f"{nombres_mes[mes - 1]} {anio}",
         mes_anterior=mes_anterior, mes_siguiente=mes_siguiente, hoy=hoy,
+        profesional_id=profesional_id, profesionales=_profesionales_activos(),
+        conteo_profesional=conteo_profesional, sin_asignar=sin_asignar,
     )
 
 
@@ -193,6 +220,13 @@ def calendario():
 def _pacientes_activos():
     return (
         sb.table("pacientes").select("id, nombre")
+        .eq("activo", True).order("nombre").execute().data or []
+    )
+
+
+def _profesionales_activos():
+    return (
+        sb.table("profesionales").select("id, nombre")
         .eq("activo", True).order("nombre").execute().data or []
     )
 

@@ -12,7 +12,7 @@ Hay dos niveles de estado:
     la pieza.
 """
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, abort, jsonify, request
 
 from services.constantes import (ARCADAS, CARAS_PIEZA, ESTADOS_CARA,
                                   ESTADOS_ORTODONCIA, ESTADOS_PIEZA,
@@ -210,3 +210,57 @@ def guardar_ortodoncia(paciente_id):
 def eliminar_ortodoncia(aparato_id):
     sb.table("ortodoncia_aparatos").delete().eq("id", aparato_id).execute()
     return jsonify({"ok": True})
+
+
+# -----------------------------------------------------------------------
+# Versiones del odontograma: "Inicial" y "Alta" son fotos congeladas de un
+# momento puntual; "Evolución" es simplemente el estado vivo de arriba
+# (las tablas odontograma/odontograma_caras), no necesita nada especial.
+# -----------------------------------------------------------------------
+@bp.route("/<int:paciente_id>/version/<tipo>", methods=["GET"])
+def obtener_version(paciente_id, tipo):
+    if tipo not in ("inicial", "alta"):
+        abort(400)
+    fila = (
+        sb.table("odontograma_versiones").select("*")
+        .eq("paciente_id", paciente_id).eq("tipo", tipo).limit(1).execute().data
+    )
+    if not fila:
+        return jsonify(None)
+    return jsonify(fila[0])
+
+
+@bp.route("/<int:paciente_id>/version/<tipo>", methods=["POST"])
+def guardar_version(paciente_id, tipo):
+    """Congela el estado ACTUAL del odontograma como 'inicial' o 'alta'."""
+    if tipo not in ("inicial", "alta"):
+        abort(400)
+
+    filas = (
+        sb.table("odontograma").select("pieza, estado, con_perno")
+        .eq("paciente_id", paciente_id).execute().data or []
+    )
+    odontograma_actual = {str(f["pieza"]): {"estado": f["estado"], "perno": f["con_perno"]} for f in filas}
+
+    filas_caras = (
+        sb.table("odontograma_caras").select("pieza, cara, estado")
+        .eq("paciente_id", paciente_id).execute().data or []
+    )
+    caras_actual: dict = {}
+    for f in filas_caras:
+        caras_actual.setdefault(str(f["pieza"]), {})[f["cara"]] = f["estado"]
+
+    ortodoncia_actual = (
+        sb.table("ortodoncia_aparatos").select("*")
+        .eq("paciente_id", paciente_id).execute().data or []
+    )
+
+    creado = sb.table("odontograma_versiones").upsert({
+        "paciente_id": paciente_id,
+        "tipo": tipo,
+        "odontograma": odontograma_actual,
+        "odontograma_caras": caras_actual,
+        "ortodoncia": ortodoncia_actual,
+    }, on_conflict="paciente_id,tipo").execute().data[0]
+
+    return jsonify({"ok": True, "version": creado})

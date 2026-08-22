@@ -33,6 +33,15 @@
         {% endfor %}
       </select>
     </div>
+    <div>
+      <label class="form-label" for="profesional_id">Profesional</label>
+      <select class="form-select form-select-sm" id="profesional_id" name="profesional_id">
+        <option value="">Todos</option>
+        {% for p in profesionales %}
+          <option value="{{ p.id }}" {{ 'selected' if profesional_id == p.id | string }}>{{ p.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
     <button class="btn btn-outline-secondary btn-sm" type="submit">Aplicar</button>
     <a class="btn btn-link btn-sm text-decoration-none" href="{{ url_for('citas.lista') }}">Volver a hoy</a>
   </div>
@@ -72,6 +81,7 @@
               </td>
               <td class="small">
                 {{ c.motivo or '—' }}
+                {% if c.profesionales %}<div class="text-muted" style="font-size:.76rem">{{ c.profesionales.nombre }}</div>{% endif %}
                 {% if c.notas %}<div class="text-muted" style="font-size:.76rem">{{ c.notas }}</div>{% endif %}
               </td>
               <td><span class="kd-estado estado-{{ c.estado }}">{{ estados[c.estado].etiqueta }}</span></td>

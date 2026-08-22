@@ -56,6 +56,21 @@
       </div>
 
       <div class="col-12">
+        <label class="form-label" for="profesional_id">Profesional</label>
+        <select class="form-select" id="profesional_id" name="profesional_id">
+          <option value="">Sin asignar</option>
+          {% for p in profesionales %}
+            <option value="{{ p.id }}" {{ 'selected' if cita.profesional_id == p.id }}>{{ p.nombre }}</option>
+          {% endfor %}
+        </select>
+        {% if not profesionales %}
+          <div class="form-text">
+            <a href="{{ url_for('profesionales.lista') }}">Agrega profesionales</a> para poder asignar citas.
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="col-12">
         <label class="form-label" for="notas">Notas</label>
         <textarea class="form-control" id="notas" name="notas" rows="2">{{ cita.notas or '' }}</textarea>
       </div>

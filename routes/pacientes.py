@@ -200,6 +200,41 @@ def detalle(paciente_id):
         .order("fecha_envio", desc=True).execute().data or []
     )
 
+    profesionales = (
+        sb.table("profesionales").select("id, nombre").eq("activo", True)
+        .order("nombre").execute().data or []
+    )
+
+    # --- Versiones del odontograma (Inicial / Alta — "Evolución" es lo vivo) --
+    versiones = (
+        sb.table("odontograma_versiones").select("tipo, fecha")
+        .eq("paciente_id", paciente_id).execute().data or []
+    )
+    version_inicial = next((v for v in versiones if v["tipo"] == "inicial"), None)
+    version_alta = next((v for v in versiones if v["tipo"] == "alta"), None)
+
+    periodontogramas = (
+        sb.table("periodontogramas").select("*").eq("paciente_id", paciente_id)
+        .order("fecha", desc=True).execute().data or []
+    )
+
+    # --- Plan de tratamiento: piezas con hallazgo, para poder "vincular" cada
+    # una a una línea de presupuesto desde el odontograma. Un hallazgo puede
+    # estar a nivel de pieza completa (ausente, corona…) o solo en una cara
+    # (caries, obturado…) — hay que mirar las dos tablas.
+    plan_tratamiento = [
+        {"pieza": p, "estado": info["estado"]}
+        for p, info in odontograma.items() if info.get("estado") != "sano"
+    ]
+    piezas_con_pieza_completa = {h["pieza"] for h in plan_tratamiento}
+    for p, caras in odontograma_caras.items():
+        if p in piezas_con_pieza_completa:
+            continue   # ya está listada por su estado de pieza completa
+        estado_cara = next((e for e in caras.values() if e != "sano"), None)
+        if estado_cara:
+            plan_tratamiento.append({"pieza": p, "estado": estado_cara})
+    plan_tratamiento.sort(key=lambda x: x["pieza"])
+
     return render_template(
         "pacientes/detalle.html",
         paciente=paciente,
@@ -227,6 +262,11 @@ def detalle(paciente_id):
         consentimientos=consentimientos,
         laboratorio=laboratorio,
         estados_laboratorio=ESTADOS_LABORATORIO,
+        profesionales=profesionales,
+        version_inicial=version_inicial,
+        version_alta=version_alta,
+        periodontogramas=periodontogramas,
+        plan_tratamiento=plan_tratamiento,
     )
 
 

@@ -3,7 +3,7 @@
 
 {% block contenido %}
 
-<!-- ================= CABECERA DEL PACIENTE ================= -->
+<!-- ================= CABECERA DEL PACIENTE (fija, fuera de las pestañas) ================= -->
 <div class="card mb-3">
   <div class="card-body d-flex flex-wrap gap-3 align-items-center">
     <div class="kd-avatar grande">{{ paciente.nombre | iniciales }}</div>
@@ -67,468 +67,592 @@
   {% endif %}
 </div>
 
-<!-- ================= ODONTOGRAMA ================= -->
-<div class="card mb-3">
-  <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
-    <span>
-      Odontograma
-      <span class="text-muted fw-normal small">
-        · notación FDI ·
-        {{ '20 piezas temporales' if paciente.tipo_paciente == 'nino' else '32 piezas permanentes' }}
-      </span>
-    </span>
-    <div class="d-flex align-items-center gap-3">
-      <span class="kd-guardado" id="odontograma-aviso"></span>
-      <button class="btn btn-outline-secondary btn-sm" id="odontograma-reiniciar" type="button">
-        Reiniciar
-      </button>
-    </div>
-  </div>
-
-  <div class="card-body">
-    <!-- Paleta: dos grupos, según si el estado aplica a la pieza entera o a una cara -->
-    <div class="kd-paleta-grupo mb-2">
-      <span class="kd-paleta-etiqueta small text-muted">Pieza completa:</span>
-      <div class="kd-paleta">
-        {% for clave in ["sano", "ausente", "corona_buena", "corona_mala", "remanente_radicular"] %}
-          {% set info = estados_pieza[clave] %}
-          <button class="kd-pincel" type="button" data-estado="{{ clave }}" data-nivel="pieza">
-            <span class="muestra" style="background:{{ info.color }}"></span>
-            {{ info.etiqueta }}
-          </button>
-        {% endfor %}
-      </div>
-    </div>
-
-    <div class="kd-paleta-grupo mb-2">
-      <span class="kd-paleta-etiqueta small text-muted">Perno (independiente de la corona):</span>
-      <div class="kd-paleta">
-        <button class="kd-pincel" type="button" data-estado="perno" data-nivel="perno">
-          <span class="muestra kd-muestra-perno"></span>
-          Con perno / sin perno (clic para alternar)
-        </button>
-      </div>
-    </div>
-
-    <div class="kd-paleta-grupo mb-3">
-      <span class="kd-paleta-etiqueta small text-muted">Por cara (clic en el sector):</span>
-      <div class="kd-paleta">
-        {% for clave in ["caries", "obturado", "obturado_mal"] %}
-          {% set info = estados_cara[clave] %}
-          <button class="kd-pincel" type="button" data-estado="{{ clave }}" data-nivel="cara">
-            <span class="muestra" style="background:{{ info.color }}"></span>
-            {{ info.etiqueta }}
-          </button>
-        {% endfor %}
-      </div>
-    </div>
-
-    <p class="small text-muted mb-2">
-      "Pieza completa" pinta todo el diente al hacer clic en él. "Por cara" solo
-      pinta el sector exacto (oclusal, mesial, distal, vestibular o lingual) donde
-      hiciste clic. "Perno" es independiente de la corona: elige ese pincel y haz
-      clic en la pieza para marcarla o desmarcarla (una pieza puede tener perno
-      sin corona, o corona sin perno). Cada cambio se guarda solo.
-    </p>
-
-    <!-- El JS lee estos data-* y dibuja el SVG dentro del contenedor -->
-    <div class="kd-odontograma"
-         id="odontograma"
-         data-paciente-id="{{ paciente.id }}"
-         data-tipo-paciente="{{ paciente.tipo_paciente or 'adulto' }}"
-         data-estados='{{ odontograma | tojson }}'
-         data-caras='{{ odontograma_caras | tojson }}'
-         data-colores='{{ colores_odontograma | tojson }}'
-         data-nombres-cara='{{ caras_pieza | tojson }}'
-         data-ortodoncia='{{ ortodoncia | tojson }}'
-         data-estados-orto='{{ estados_ortodoncia | tojson }}'></div>
-
-    <!-- Aparato ortodóntico: fijo (línea recta entre 2 piezas) o removible
-         (zigzag sobre toda la arcada), según la norma del odontograma clínico. -->
-    <div class="kd-mordida mt-3">
-      <label class="small fw-semibold mb-2 d-block">Aparato ortodóntico:</label>
-
-      <div id="ortodoncia-lista" class="d-flex flex-column gap-1 mb-2"></div>
-
-      <div class="d-flex flex-wrap gap-2 align-items-end">
-        <div>
-          <label class="form-label small mb-1" for="orto-tipo">Tipo</label>
-          <select class="form-select form-select-sm kd-select-orto" id="orto-tipo">
-            {% for clave, etiqueta in tipos_ortodoncia.items() %}
-              <option value="{{ clave }}">{{ etiqueta }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <label class="form-label small mb-1" for="orto-arcada">Arcada</label>
-          <select class="form-select form-select-sm kd-select-orto" id="orto-arcada">
-            {% for clave, etiqueta in arcadas.items() %}
-              <option value="{{ clave }}">{{ etiqueta }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div id="orto-campos-fijo" class="d-flex gap-2">
-          <div>
-            <label class="form-label small mb-1" for="orto-desde">Desde</label>
-            <select class="form-select form-select-sm kd-select-orto-pieza" id="orto-desde"></select>
-          </div>
-          <div>
-            <label class="form-label small mb-1" for="orto-hasta">Hasta</label>
-            <select class="form-select form-select-sm kd-select-orto-pieza" id="orto-hasta"></select>
-          </div>
-        </div>
-        <div>
-          <label class="form-label small mb-1" for="orto-estado">Estado</label>
-          <select class="form-select form-select-sm kd-select-orto" id="orto-estado">
-            {% for clave, info in estados_ortodoncia.items() %}
-              <option value="{{ clave }}">{{ info.etiqueta }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <button class="btn btn-primary btn-sm" type="button" id="orto-agregar">Agregar</button>
-        <span class="kd-guardado" id="ortodoncia-aviso"></span>
-      </div>
-      <div class="form-text mt-1">
-        "Fijo" dibuja una línea recta entre las dos piezas extremas del aparato (elige
-        primero la arcada, para que "Desde/Hasta" solo muestren esas piezas).
-        "Removible" dibuja un zigzag sobre toda la arcada elegida.
-      </div>
-    </div>
-
-    <!-- Tipo de mordida: clasificación aproximada, se guarda sola al cambiar -->
-    <div class="kd-mordida mt-3 d-flex flex-wrap align-items-center gap-2">
-      <label for="mordida-select" class="small fw-semibold mb-0">Tipo de mordida:</label>
-      <select class="form-select form-select-sm w-auto" id="mordida-select"
-              data-paciente-id="{{ paciente.id }}">
-        <option value="">Sin evaluar</option>
-        {% for clave, etiqueta in tipos_mordida.items() %}
-          <option value="{{ clave }}" {% if paciente.mordida == clave %}selected{% endif %}>
-            {{ etiqueta }}
-          </option>
-        {% endfor %}
-      </select>
-      <span class="kd-guardado" id="mordida-aviso"></span>
-    </div>
-  </div>
-</div>
-
+<!-- ================= PESTAÑAS DE LA FICHA ================= -->
 <div class="row g-3">
-  <!-- ================= HISTORIAL CLÍNICO ================= -->
-  <div class="col-lg-8">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Historial clínico <span class="text-muted fw-normal small">· {{ entradas | length }} entrada(s)</span></span>
-        <div class="d-flex gap-2">
-          <a class="btn btn-outline-secondary btn-sm" target="_blank"
-             href="{{ url_for('pacientes.historial_pdf', paciente_id=paciente.id) }}">
-            Descargar PDF
-          </a>
-          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalHistorial">
-            Nueva entrada
-          </button>
-        </div>
-      </div>
-
-      <div class="card-body">
-        {% if entradas %}
-          <div class="kd-timeline">
-            {% for e in entradas %}
-              <div class="kd-evento">
-                <div class="d-flex justify-content-between align-items-start gap-2">
-                  <p class="kd-eyebrow mb-1">{{ e.fecha | fecha }}</p>
-                  <form method="post" action="{{ url_for('historial.eliminar', entrada_id=e.id) }}"
-                        onsubmit="return confirm('Se eliminará esta entrada y sus imágenes. ¿Continuar?')">
-                    <input type="hidden" name="paciente_id" value="{{ paciente.id }}">
-                    <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted"
-                            style="font-size:.76rem" type="submit">Eliminar</button>
-                  </form>
-                </div>
-
-                {% if e.diagnostico %}
-                  <div class="fw-semibold">{{ e.diagnostico }}</div>
-                {% endif %}
-                {% if e.tratamiento %}
-                  <div class="small mt-1"><span class="text-muted">Tratamiento:</span> {{ e.tratamiento }}</div>
-                {% endif %}
-                {% if e.notas %}
-                  <div class="small text-muted mt-1">{{ e.notas }}</div>
-                {% endif %}
-
-                {% if e.historial_imagenes %}
-                  <div class="d-flex flex-wrap gap-2 mt-2">
-                    {% for img in e.historial_imagenes %}
-                      <div class="kd-miniatura">
-                        <a href="{{ img.url }}" target="_blank" rel="noopener"
-                           title="{{ img.nombre_orig }}">
-                          <img src="{{ img.url }}" alt="{{ img.nombre_orig or 'Imagen clínica' }}" loading="lazy">
-                        </a>
-                        <form method="post"
-                              action="{{ url_for('historial.eliminar_imagen', imagen_id=img.id) }}"
-                              onsubmit="return confirm('¿Eliminar esta imagen?')">
-                          <input type="hidden" name="paciente_id" value="{{ paciente.id }}">
-                          <button class="quitar" type="submit" title="Eliminar imagen">✕</button>
-                        </form>
-                      </div>
-                    {% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div class="kd-vacio">
-            <strong>Sin entradas todavía</strong>
-            Registra el primer diagnóstico con el botón «Nueva entrada».
-          </div>
-        {% endif %}
-      </div>
+  <div class="col-lg-2">
+    <div class="nav flex-lg-column nav-pills kd-tabs-paciente" role="tablist" aria-orientation="vertical">
+      <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tab-historia" type="button">Historia clínica</button>
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-odontograma" type="button">Odontograma</button>
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-periodontograma" type="button">Periodontograma</button>
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-presupuesto" type="button">Estado de cuenta</button>
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-recetas" type="button">Prescripciones</button>
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-consentimientos" type="button">Consentimientos</button>
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-laboratorio" type="button">Laboratorio</button>
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-citas" type="button">Citas</button>
     </div>
   </div>
 
-  <!-- ================= CITAS DEL PACIENTE ================= -->
-  <div class="col-lg-4">
-    <div class="card">
-      <div class="card-header">Citas</div>
-      {% if citas %}
-        <div class="list-group list-group-flush">
-          {% for c in citas %}
-            <div class="list-group-item border-0">
-              <div class="d-flex justify-content-between align-items-start gap-2">
-                <div>
-                  <div class="dato small">{{ c.fecha_hora | fecha_hora }}</div>
-                  <div class="small text-muted">{{ c.motivo or 'Sin motivo' }}</div>
-                </div>
-                <span class="kd-estado estado-{{ c.estado }}">{{ c.estado }}</span>
-              </div>
-              {% if c.estado == 'pendiente' %}
-                <div class="d-flex gap-1 mt-2">
-                  <form method="post" action="{{ url_for('citas.cambiar_estado', cita_id=c.id) }}">
-                    <input type="hidden" name="estado" value="completada">
-                    <button class="btn btn-outline-secondary btn-sm py-0" style="font-size:.72rem">Completada</button>
-                  </form>
-                  <form method="post" action="{{ url_for('citas.cambiar_estado', cita_id=c.id) }}">
-                    <input type="hidden" name="estado" value="cancelada">
-                    <button class="btn btn-outline-secondary btn-sm py-0" style="font-size:.72rem">Cancelar</button>
-                  </form>
-                </div>
-              {% endif %}
-            </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="kd-vacio py-4">
-          <strong>Sin citas registradas</strong>
-          <a href="{{ url_for('citas.nueva', paciente_id=paciente.id) }}">Agendar una</a>.
-        </div>
-      {% endif %}
-    </div>
+  <div class="col-lg-10">
+    <div class="tab-content">
 
-    <!-- ================= RECETAS MÉDICAS ================= -->
-    <div class="card mt-3">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Recetas médicas</span>
-        <a class="btn btn-primary btn-sm" href="{{ url_for('recetas.nueva', paciente_id=paciente.id) }}">
-          Nueva receta
-        </a>
-      </div>
-      {% if recetas %}
-        <div class="list-group list-group-flush">
-          {% for r in recetas %}
-            <div class="list-group-item border-0 d-flex justify-content-between align-items-center gap-2">
-              <div>
-                <div class="dato small">{{ r.fecha | fecha }}</div>
-                <div class="small text-muted text-truncate" style="max-width:190px">
-                  {{ r.contenido.split('\n')[0] }}
-                </div>
-              </div>
+      <!-- ================= HISTORIA CLÍNICA ================= -->
+      <div class="tab-pane fade show active" id="tab-historia" role="tabpanel">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Historial clínico <span class="text-muted fw-normal small">· {{ entradas | length }} entrada(s)</span></span>
+            <div class="d-flex gap-2">
               <a class="btn btn-outline-secondary btn-sm" target="_blank"
-                 href="{{ url_for('recetas.descargar', receta_id=r.id) }}">
-                PDF
+                 href="{{ url_for('pacientes.historial_pdf', paciente_id=paciente.id) }}">
+                Descargar PDF
               </a>
-            </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="kd-vacio py-4">
-          <strong>Sin recetas registradas</strong>
-          <a href="{{ url_for('recetas.nueva', paciente_id=paciente.id) }}">Generar una</a>.
-        </div>
-      {% endif %}
-    </div>
-  </div>
-</div>
-
-<div class="row g-3 mt-1">
-  <!-- ================= PRESUPUESTO Y PAGOS ================= -->
-  <div class="col-lg-7">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Presupuesto y pagos</span>
-        <div class="d-flex gap-2">
-          <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalPago">
-            Registrar pago
-          </button>
-          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalTratamiento">
-            Agregar tratamiento
-          </button>
-        </div>
-      </div>
-      <div class="card-body py-2">
-        <div class="row text-center g-2">
-          <div class="col-4">
-            <div class="small text-muted">Presupuestado</div>
-            <div class="dato fw-semibold">S/ {{ '%.2f' | format(total_presupuestado) }}</div>
-          </div>
-          <div class="col-4">
-            <div class="small text-muted">Pagado</div>
-            <div class="dato fw-semibold" style="color:var(--kd-verde)">S/ {{ '%.2f' | format(total_pagado) }}</div>
-          </div>
-          <div class="col-4">
-            <div class="small text-muted">Saldo pendiente</div>
-            <div class="dato fw-semibold" style="color:{{ 'var(--kd-lesion)' if saldo_pendiente > 0 else 'var(--kd-verde)' }}">
-              S/ {{ '%.2f' | format(saldo_pendiente) }}
+              <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalHistorial">
+                Nueva entrada
+              </button>
             </div>
           </div>
-        </div>
-      </div>
 
-      {% if tratamientos %}
-        <div class="table-responsive border-top">
-          <table class="table table-sm align-middle mb-0">
-            <thead>
-              <tr><th>Tratamiento</th><th>Costo</th><th>Estado</th><th></th></tr>
-            </thead>
-            <tbody>
-              {% for t in tratamientos %}
-                <tr>
-                  <td class="small">{{ t.descripcion }}<div class="text-muted" style="font-size:.7rem">{{ t.fecha | fecha }}</div></td>
-                  <td class="dato small">S/ {{ '%.2f' | format(t.costo) }}</td>
-                  <td>
-                    <form method="post" action="{{ url_for('finanzas.cambiar_estado_tratamiento', tratamiento_id=t.id) }}">
-                      <select class="form-select form-select-sm" name="estado" onchange="this.form.requestSubmit()" style="font-size:.72rem">
-                        {% for clave, info in estados_tratamiento.items() %}
-                          <option value="{{ clave }}" {{ 'selected' if t.estado == clave }}>{{ info.etiqueta }}</option>
+          <div class="card-body">
+            {% if entradas %}
+              <div class="kd-timeline">
+                {% for e in entradas %}
+                  <div class="kd-evento">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                      <p class="kd-eyebrow mb-1">{{ e.fecha | fecha }}</p>
+                      <form method="post" action="{{ url_for('historial.eliminar', entrada_id=e.id) }}"
+                            onsubmit="return confirm('Se eliminará esta entrada y sus imágenes. ¿Continuar?')">
+                        <input type="hidden" name="paciente_id" value="{{ paciente.id }}">
+                        <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted"
+                                style="font-size:.76rem" type="submit">Eliminar</button>
+                      </form>
+                    </div>
+
+                    {% if e.diagnostico %}
+                      <div class="fw-semibold">{{ e.diagnostico }}</div>
+                    {% endif %}
+                    {% if e.tratamiento %}
+                      <div class="small mt-1"><span class="text-muted">Tratamiento:</span> {{ e.tratamiento }}</div>
+                    {% endif %}
+                    {% if e.notas %}
+                      <div class="small text-muted mt-1">{{ e.notas }}</div>
+                    {% endif %}
+
+                    {% if e.historial_imagenes %}
+                      <div class="d-flex flex-wrap gap-2 mt-2">
+                        {% for img in e.historial_imagenes %}
+                          <div class="kd-miniatura">
+                            <a href="{{ img.url }}" target="_blank" rel="noopener"
+                               title="{{ img.nombre_orig }}">
+                              <img src="{{ img.url }}" alt="{{ img.nombre_orig or 'Imagen clínica' }}" loading="lazy">
+                            </a>
+                            <form method="post"
+                                  action="{{ url_for('historial.eliminar_imagen', imagen_id=img.id) }}"
+                                  onsubmit="return confirm('¿Eliminar esta imagen?')">
+                              <input type="hidden" name="paciente_id" value="{{ paciente.id }}">
+                              <button class="quitar" type="submit" title="Eliminar imagen">✕</button>
+                            </form>
+                          </div>
                         {% endfor %}
-                      </select>
-                    </form>
-                  </td>
-                  <td class="text-end">
-                    <form method="post" action="{{ url_for('finanzas.eliminar_tratamiento', tratamiento_id=t.id) }}"
-                          onsubmit="return confirm('¿Eliminar este tratamiento del presupuesto?')">
-                      <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted" style="font-size:.72rem" type="submit">Eliminar</button>
-                    </form>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% endif %}
-
-      {% if pagos %}
-        <div class="table-responsive border-top">
-          <table class="table table-sm align-middle mb-0">
-            <thead><tr><th>Pago</th><th>Método</th><th>Fecha</th><th></th></tr></thead>
-            <tbody>
-              {% for p in pagos %}
-                <tr>
-                  <td class="dato small">S/ {{ '%.2f' | format(p.monto) }}</td>
-                  <td class="small">{{ metodos_pago.get(p.metodo, p.metodo) }}</td>
-                  <td class="small text-muted">{{ p.fecha | fecha }}</td>
-                  <td class="text-end">
-                    <form method="post" action="{{ url_for('finanzas.eliminar_pago', pago_id=p.id) }}"
-                          onsubmit="return confirm('¿Eliminar este pago?')">
-                      <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted" style="font-size:.72rem" type="submit">Eliminar</button>
-                    </form>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% endif %}
-
-      {% if not tratamientos and not pagos %}
-        <div class="kd-vacio py-4">
-          <strong>Sin presupuesto todavía</strong>
-          Agrega un tratamiento para empezar a llevar la cuenta.
-        </div>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- ================= CONSENTIMIENTOS Y LABORATORIO ================= -->
-  <div class="col-lg-5">
-    <div class="card mb-3">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Consentimientos firmados</span>
-        <a class="btn btn-primary btn-sm" href="{{ url_for('consentimientos.nuevo', paciente_id=paciente.id) }}">
-          Nuevo
-        </a>
-      </div>
-      {% if consentimientos %}
-        <div class="list-group list-group-flush">
-          {% for c in consentimientos %}
-            <div class="list-group-item border-0 d-flex justify-content-between align-items-center gap-2">
-              <div>
-                <div class="small fw-medium">{{ c.titulo }}</div>
-                <div class="dato small text-muted">{{ c.firmado_en | fecha_hora }}</div>
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
               </div>
-              <div class="d-flex align-items-center gap-2">
-                <a class="btn btn-outline-secondary btn-sm" href="{{ c.firma_url }}" target="_blank">Ver firma</a>
-                <form method="post" action="{{ url_for('consentimientos.eliminar', consentimiento_id=c.id) }}"
-                      onsubmit="return confirm('¿Eliminar este consentimiento?')">
-                  <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted" style="font-size:.72rem" type="submit">Eliminar</button>
-                </form>
+            {% else %}
+              <div class="kd-vacio">
+                <strong>Sin entradas todavía</strong>
+                Registra el primer diagnóstico con el botón «Nueva entrada».
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= ODONTOGRAMA ================= -->
+      <div class="tab-pane fade" id="tab-odontograma" role="tabpanel">
+        <div class="card mb-3">
+          <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+            <span>
+              Odontograma
+              <span class="text-muted fw-normal small">
+                · notación FDI ·
+                {{ '20 piezas temporales' if paciente.tipo_paciente == 'nino' else '32 piezas permanentes' }}
+              </span>
+            </span>
+            <div class="d-flex align-items-center gap-3">
+              <span class="kd-guardado" id="odontograma-aviso"></span>
+              <button class="btn btn-outline-secondary btn-sm" id="odontograma-reiniciar" type="button">
+                Reiniciar
+              </button>
+            </div>
+          </div>
+
+          <!-- Versiones: "Evolución" es el estado vivo de abajo; Inicial/Alta
+               son fotos congeladas de un momento puntual del tratamiento. -->
+          <div class="card-header d-flex flex-wrap gap-2 align-items-center">
+            <span class="small text-muted">Versión:</span>
+            <button class="btn btn-outline-secondary btn-sm" type="button"
+                    onclick="guardarVersionOdontograma('inicial')">
+              Guardar estado actual como «Inicial»
+            </button>
+            <span class="small text-muted">
+              {{ ('Guardada el ' ~ (version_inicial.fecha | fecha)) if version_inicial else 'Sin guardar' }}
+            </span>
+            <span class="mx-2 text-muted">·</span>
+            <button class="btn btn-outline-secondary btn-sm" type="button"
+                    onclick="guardarVersionOdontograma('alta')">
+              Guardar estado actual como «Alta»
+            </button>
+            <span class="small text-muted">
+              {{ ('Guardada el ' ~ (version_alta.fecha | fecha)) if version_alta else 'Sin guardar' }}
+            </span>
+          </div>
+
+          <div class="card-body">
+            <!-- Paleta: dos grupos, según si el estado aplica a la pieza entera o a una cara -->
+            <div class="kd-paleta-grupo mb-2">
+              <span class="kd-paleta-etiqueta small text-muted">Pieza completa:</span>
+              <div class="kd-paleta">
+                {% for clave in ["sano", "ausente", "corona_buena", "corona_mala", "remanente_radicular"] %}
+                  {% set info = estados_pieza[clave] %}
+                  <button class="kd-pincel" type="button" data-estado="{{ clave }}" data-nivel="pieza">
+                    <span class="muestra" style="background:{{ info.color }}"></span>
+                    {{ info.etiqueta }}
+                  </button>
+                {% endfor %}
               </div>
             </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="kd-vacio py-4">
-          <strong>Sin consentimientos firmados</strong>
-          <a href="{{ url_for('consentimientos.nuevo', paciente_id=paciente.id) }}">Registra el primero</a>.
-        </div>
-      {% endif %}
-    </div>
 
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Laboratorio dental</span>
-        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalLaboratorio">
-          Nuevo envío
-        </button>
-      </div>
-      {% if laboratorio %}
-        <div class="list-group list-group-flush">
-          {% for l in laboratorio %}
-            <div class="list-group-item border-0">
-              <div class="d-flex justify-content-between align-items-start gap-2">
+            <div class="kd-paleta-grupo mb-2">
+              <span class="kd-paleta-etiqueta small text-muted">Perno (independiente de la corona):</span>
+              <div class="kd-paleta">
+                <button class="kd-pincel" type="button" data-estado="perno" data-nivel="perno">
+                  <span class="muestra kd-muestra-perno"></span>
+                  Con perno / sin perno (clic para alternar)
+                </button>
+              </div>
+            </div>
+
+            <div class="kd-paleta-grupo mb-3">
+              <span class="kd-paleta-etiqueta small text-muted">Por cara (clic en el sector):</span>
+              <div class="kd-paleta">
+                {% for clave in ["caries", "obturado", "obturado_mal"] %}
+                  {% set info = estados_cara[clave] %}
+                  <button class="kd-pincel" type="button" data-estado="{{ clave }}" data-nivel="cara">
+                    <span class="muestra" style="background:{{ info.color }}"></span>
+                    {{ info.etiqueta }}
+                  </button>
+                {% endfor %}
+              </div>
+            </div>
+
+            <p class="small text-muted mb-2">
+              "Pieza completa" pinta todo el diente al hacer clic en él. "Por cara" solo
+              pinta el sector exacto (oclusal, mesial, distal, vestibular o lingual) donde
+              hiciste clic. "Perno" es independiente de la corona: elige ese pincel y haz
+              clic en la pieza para marcarla o desmarcarla (una pieza puede tener perno
+              sin corona, o corona sin perno). Cada cambio se guarda solo.
+            </p>
+
+            <!-- El JS lee estos data-* y dibuja el SVG dentro del contenedor -->
+            <div class="kd-odontograma"
+                 id="odontograma"
+                 data-paciente-id="{{ paciente.id }}"
+                 data-tipo-paciente="{{ paciente.tipo_paciente or 'adulto' }}"
+                 data-estados='{{ odontograma | tojson }}'
+                 data-caras='{{ odontograma_caras | tojson }}'
+                 data-colores='{{ colores_odontograma | tojson }}'
+                 data-nombres-cara='{{ caras_pieza | tojson }}'
+                 data-ortodoncia='{{ ortodoncia | tojson }}'
+                 data-estados-orto='{{ estados_ortodoncia | tojson }}'></div>
+
+            <!-- Aparato ortodóntico: fijo (línea recta entre 2 piezas) o removible
+                 (zigzag sobre toda la arcada), según la norma del odontograma clínico. -->
+            <div class="kd-mordida mt-3">
+              <label class="small fw-semibold mb-2 d-block">Aparato ortodóntico:</label>
+
+              <div id="ortodoncia-lista" class="d-flex flex-column gap-1 mb-2"></div>
+
+              <div class="d-flex flex-wrap gap-2 align-items-end">
                 <div>
-                  <div class="small fw-medium">{{ l.descripcion }}</div>
-                  <div class="small text-muted">{{ l.laboratorio or 'Sin laboratorio indicado' }} · enviado {{ l.fecha_envio | fecha }}</div>
+                  <label class="form-label small mb-1" for="orto-tipo">Tipo</label>
+                  <select class="form-select form-select-sm kd-select-orto" id="orto-tipo">
+                    {% for clave, etiqueta in tipos_ortodoncia.items() %}
+                      <option value="{{ clave }}">{{ etiqueta }}</option>
+                    {% endfor %}
+                  </select>
                 </div>
-                <form method="post" action="{{ url_for('laboratorio.eliminar', trabajo_id=l.id) }}"
-                      onsubmit="return confirm('¿Eliminar este registro?')">
-                  <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted" style="font-size:.72rem" type="submit">Eliminar</button>
-                </form>
+                <div>
+                  <label class="form-label small mb-1" for="orto-arcada">Arcada</label>
+                  <select class="form-select form-select-sm kd-select-orto" id="orto-arcada">
+                    {% for clave, etiqueta in arcadas.items() %}
+                      <option value="{{ clave }}">{{ etiqueta }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div id="orto-campos-fijo" class="d-flex gap-2">
+                  <div>
+                    <label class="form-label small mb-1" for="orto-desde">Desde</label>
+                    <select class="form-select form-select-sm kd-select-orto-pieza" id="orto-desde"></select>
+                  </div>
+                  <div>
+                    <label class="form-label small mb-1" for="orto-hasta">Hasta</label>
+                    <select class="form-select form-select-sm kd-select-orto-pieza" id="orto-hasta"></select>
+                  </div>
+                </div>
+                <div>
+                  <label class="form-label small mb-1" for="orto-estado">Estado</label>
+                  <select class="form-select form-select-sm kd-select-orto" id="orto-estado">
+                    {% for clave, info in estados_ortodoncia.items() %}
+                      <option value="{{ clave }}">{{ info.etiqueta }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <button class="btn btn-primary btn-sm" type="button" id="orto-agregar">Agregar</button>
+                <span class="kd-guardado" id="ortodoncia-aviso"></span>
               </div>
-              <form method="post" action="{{ url_for('laboratorio.cambiar_estado', trabajo_id=l.id) }}" class="mt-1">
-                <select class="form-select form-select-sm w-auto" name="estado" onchange="this.form.requestSubmit()">
-                  {% for clave, info in estados_laboratorio.items() %}
-                    <option value="{{ clave }}" {{ 'selected' if l.estado == clave }}>{{ info.etiqueta }}</option>
-                  {% endfor %}
-                </select>
-              </form>
+              <div class="form-text mt-1">
+                "Fijo" dibuja una línea recta entre las dos piezas extremas del aparato (elige
+                primero la arcada, para que "Desde/Hasta" solo muestren esas piezas).
+                "Removible" dibuja un zigzag sobre toda la arcada elegida.
+              </div>
             </div>
-          {% endfor %}
+
+            <!-- Tipo de mordida: clasificación aproximada, se guarda sola al cambiar -->
+            <div class="kd-mordida mt-3 d-flex flex-wrap align-items-center gap-2">
+              <label for="mordida-select" class="small fw-semibold mb-0">Tipo de mordida:</label>
+              <select class="form-select form-select-sm w-auto" id="mordida-select"
+                      data-paciente-id="{{ paciente.id }}">
+                <option value="">Sin evaluar</option>
+                {% for clave, etiqueta in tipos_mordida.items() %}
+                  <option value="{{ clave }}" {% if paciente.mordida == clave %}selected{% endif %}>
+                    {{ etiqueta }}
+                  </option>
+                {% endfor %}
+              </select>
+              <span class="kd-guardado" id="mordida-aviso"></span>
+            </div>
+          </div>
         </div>
-      {% else %}
-        <div class="kd-vacio py-4">
-          <strong>Sin trabajos enviados</strong>
-          Registra coronas, prótesis u otros envíos al laboratorio.
+
+        <!-- ================= PLAN DE TRATAMIENTO ================= -->
+        <div class="card">
+          <div class="card-header">
+            Plan de tratamiento <span class="text-muted fw-normal small">· hallazgos del odontograma sin resolver</span>
+          </div>
+          {% if plan_tratamiento %}
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead><tr><th>Pieza</th><th>Hallazgo</th><th></th></tr></thead>
+                <tbody>
+                  {% for h in plan_tratamiento %}
+                    <tr>
+                      <td class="dato small">{{ h.pieza }}</td>
+                      <td class="small">{{ colores_odontograma[h.estado].etiqueta }}</td>
+                      <td class="text-end">
+                        <button class="btn btn-outline-secondary btn-sm"
+                                onclick="vincularAPresupuesto('{{ h.pieza }}', '{{ colores_odontograma[h.estado].etiqueta }} pieza {{ h.pieza }}')">
+                          Vincular a presupuesto
+                        </button>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="kd-vacio py-4">
+              <strong>Sin hallazgos pendientes</strong>
+              Todas las piezas están marcadas como sanas en el odontograma.
+            </div>
+          {% endif %}
         </div>
-      {% endif %}
+      </div>
+
+      <!-- ================= PERIODONTOGRAMA ================= -->
+      <div class="tab-pane fade" id="tab-periodontograma" role="tabpanel">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Periodontograma <span class="text-muted fw-normal small">· {{ periodontogramas | length }} examen(es)</span></span>
+            <a class="btn btn-primary btn-sm" href="{{ url_for('periodontograma.nuevo', paciente_id=paciente.id) }}">
+              Nuevo periodontograma
+            </a>
+          </div>
+          {% if periodontogramas %}
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead><tr><th>Fecha</th><th>%IP (placa)</th><th>%SAS (sangrado)</th><th>Supuración</th><th></th></tr></thead>
+                <tbody>
+                  {% for p in periodontogramas %}
+                    <tr>
+                      <td class="dato small">{{ p.fecha | fecha }}</td>
+                      <td class="dato small">{{ p.indice_placa }}%</td>
+                      <td class="dato small">{{ p.indice_sangrado }}%</td>
+                      <td class="dato small">{{ p.sitios_supuracion }} sitio(s)</td>
+                      <td class="text-end">
+                        <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('periodontograma.ver', periodontograma_id=p.id) }}">Ver</a>
+                        <form class="d-inline" method="post" action="{{ url_for('periodontograma.eliminar', periodontograma_id=p.id) }}"
+                              onsubmit="return confirm('¿Eliminar este periodontograma?')">
+                          <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted ms-2" style="font-size:.72rem" type="submit">Eliminar</button>
+                        </form>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="kd-vacio py-4">
+              <strong>Sin periodontogramas registrados</strong>
+              <a href="{{ url_for('periodontograma.nuevo', paciente_id=paciente.id) }}">Registra el primero</a>.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- ================= ESTADO DE CUENTA (presupuesto y pagos) ================= -->
+      <div class="tab-pane fade" id="tab-presupuesto" role="tabpanel">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Presupuesto y pagos</span>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalPago">
+                Registrar pago
+              </button>
+              <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalTratamiento">
+                Agregar tratamiento
+              </button>
+            </div>
+          </div>
+          <div class="card-body py-2">
+            <div class="row text-center g-2">
+              <div class="col-4">
+                <div class="small text-muted">Presupuestado</div>
+                <div class="dato fw-semibold">S/ {{ '%.2f' | format(total_presupuestado) }}</div>
+              </div>
+              <div class="col-4">
+                <div class="small text-muted">Pagado</div>
+                <div class="dato fw-semibold" style="color:var(--kd-verde)">S/ {{ '%.2f' | format(total_pagado) }}</div>
+              </div>
+              <div class="col-4">
+                <div class="small text-muted">Saldo pendiente</div>
+                <div class="dato fw-semibold" style="color:{{ 'var(--kd-lesion)' if saldo_pendiente > 0 else 'var(--kd-verde)' }}">
+                  S/ {{ '%.2f' | format(saldo_pendiente) }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {% if tratamientos %}
+            <div class="table-responsive border-top">
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr><th>Tratamiento</th><th>Profesional</th><th>Costo</th><th>Estado</th><th></th></tr>
+                </thead>
+                <tbody>
+                  {% for t in tratamientos %}
+                    <tr>
+                      <td class="small">
+                        {{ t.descripcion }}{% if t.pieza %} <span class="dato text-muted">· pieza {{ t.pieza }}</span>{% endif %}
+                        <div class="text-muted" style="font-size:.7rem">{{ t.fecha | fecha }}</div>
+                      </td>
+                      <td class="small">{{ (profesionales | selectattr('id', 'equalto', t.profesional_id) | first).nombre if t.profesional_id else '—' }}</td>
+                      <td class="dato small">S/ {{ '%.2f' | format(t.costo) }}</td>
+                      <td>
+                        <form method="post" action="{{ url_for('finanzas.cambiar_estado_tratamiento', tratamiento_id=t.id) }}">
+                          <select class="form-select form-select-sm" name="estado" onchange="this.form.requestSubmit()" style="font-size:.72rem">
+                            {% for clave, info in estados_tratamiento.items() %}
+                              <option value="{{ clave }}" {{ 'selected' if t.estado == clave }}>{{ info.etiqueta }}</option>
+                            {% endfor %}
+                          </select>
+                        </form>
+                      </td>
+                      <td class="text-end">
+                        <form method="post" action="{{ url_for('finanzas.eliminar_tratamiento', tratamiento_id=t.id) }}"
+                              onsubmit="return confirm('¿Eliminar este tratamiento del presupuesto?')">
+                          <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted" style="font-size:.72rem" type="submit">Eliminar</button>
+                        </form>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+
+          {% if pagos %}
+            <div class="table-responsive border-top">
+              <table class="table table-sm align-middle mb-0">
+                <thead><tr><th>Pago</th><th>Método</th><th>Fecha</th><th></th></tr></thead>
+                <tbody>
+                  {% for p in pagos %}
+                    <tr>
+                      <td class="dato small">S/ {{ '%.2f' | format(p.monto) }}</td>
+                      <td class="small">{{ metodos_pago.get(p.metodo, p.metodo) }}</td>
+                      <td class="small text-muted">{{ p.fecha | fecha }}</td>
+                      <td class="text-end">
+                        <form method="post" action="{{ url_for('finanzas.eliminar_pago', pago_id=p.id) }}"
+                              onsubmit="return confirm('¿Eliminar este pago?')">
+                          <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted" style="font-size:.72rem" type="submit">Eliminar</button>
+                        </form>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+
+          {% if not tratamientos and not pagos %}
+            <div class="kd-vacio py-4">
+              <strong>Sin presupuesto todavía</strong>
+              Agrega un tratamiento para empezar a llevar la cuenta.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- ================= RECETAS MÉDICAS ================= -->
+      <div class="tab-pane fade" id="tab-recetas" role="tabpanel">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Recetas médicas</span>
+            <a class="btn btn-primary btn-sm" href="{{ url_for('recetas.nueva', paciente_id=paciente.id) }}">
+              Nueva receta
+            </a>
+          </div>
+          {% if recetas %}
+            <div class="list-group list-group-flush">
+              {% for r in recetas %}
+                <div class="list-group-item border-0 d-flex justify-content-between align-items-center gap-2">
+                  <div>
+                    <div class="dato small">{{ r.fecha | fecha }}</div>
+                    <div class="small text-muted text-truncate" style="max-width:400px">
+                      {{ r.contenido.split('\n')[0] }}
+                    </div>
+                  </div>
+                  <a class="btn btn-outline-secondary btn-sm" target="_blank"
+                     href="{{ url_for('recetas.descargar', receta_id=r.id) }}">
+                    PDF
+                  </a>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="kd-vacio py-4">
+              <strong>Sin recetas registradas</strong>
+              <a href="{{ url_for('recetas.nueva', paciente_id=paciente.id) }}">Generar una</a>.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- ================= CONSENTIMIENTOS ================= -->
+      <div class="tab-pane fade" id="tab-consentimientos" role="tabpanel">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Consentimientos firmados</span>
+            <a class="btn btn-primary btn-sm" href="{{ url_for('consentimientos.nuevo', paciente_id=paciente.id) }}">
+              Nuevo
+            </a>
+          </div>
+          {% if consentimientos %}
+            <div class="list-group list-group-flush">
+              {% for c in consentimientos %}
+                <div class="list-group-item border-0 d-flex justify-content-between align-items-center gap-2">
+                  <div>
+                    <div class="small fw-medium">{{ c.titulo }}</div>
+                    <div class="dato small text-muted">{{ c.firmado_en | fecha_hora }}</div>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <a class="btn btn-outline-secondary btn-sm" href="{{ c.firma_url }}" target="_blank">Ver firma</a>
+                    <form method="post" action="{{ url_for('consentimientos.eliminar', consentimiento_id=c.id) }}"
+                          onsubmit="return confirm('¿Eliminar este consentimiento?')">
+                      <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted" style="font-size:.72rem" type="submit">Eliminar</button>
+                    </form>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="kd-vacio py-4">
+              <strong>Sin consentimientos firmados</strong>
+              <a href="{{ url_for('consentimientos.nuevo', paciente_id=paciente.id) }}">Registra el primero</a>.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- ================= LABORATORIO ================= -->
+      <div class="tab-pane fade" id="tab-laboratorio" role="tabpanel">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Laboratorio dental</span>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalLaboratorio">
+              Nuevo envío
+            </button>
+          </div>
+          {% if laboratorio %}
+            <div class="list-group list-group-flush">
+              {% for l in laboratorio %}
+                <div class="list-group-item border-0">
+                  <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                      <div class="small fw-medium">{{ l.descripcion }}</div>
+                      <div class="small text-muted">{{ l.laboratorio or 'Sin laboratorio indicado' }} · enviado {{ l.fecha_envio | fecha }}</div>
+                    </div>
+                    <form method="post" action="{{ url_for('laboratorio.eliminar', trabajo_id=l.id) }}"
+                          onsubmit="return confirm('¿Eliminar este registro?')">
+                      <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted" style="font-size:.72rem" type="submit">Eliminar</button>
+                    </form>
+                  </div>
+                  <form method="post" action="{{ url_for('laboratorio.cambiar_estado', trabajo_id=l.id) }}" class="mt-1">
+                    <select class="form-select form-select-sm w-auto" name="estado" onchange="this.form.requestSubmit()">
+                      {% for clave, info in estados_laboratorio.items() %}
+                        <option value="{{ clave }}" {{ 'selected' if l.estado == clave }}>{{ info.etiqueta }}</option>
+                      {% endfor %}
+                    </select>
+                  </form>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="kd-vacio py-4">
+              <strong>Sin trabajos enviados</strong>
+              Registra coronas, prótesis u otros envíos al laboratorio.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- ================= CITAS ================= -->
+      <div class="tab-pane fade" id="tab-citas" role="tabpanel">
+        <div class="card">
+          <div class="card-header">Citas</div>
+          {% if citas %}
+            <div class="list-group list-group-flush">
+              {% for c in citas %}
+                <div class="list-group-item border-0">
+                  <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                      <div class="dato small">{{ c.fecha_hora | fecha_hora }}</div>
+                      <div class="small text-muted">{{ c.motivo or 'Sin motivo' }}</div>
+                    </div>
+                    <span class="kd-estado estado-{{ c.estado }}">{{ c.estado }}</span>
+                  </div>
+                  {% if c.estado == 'pendiente' %}
+                    <div class="d-flex gap-1 mt-2">
+                      <form method="post" action="{{ url_for('citas.cambiar_estado', cita_id=c.id) }}">
+                        <input type="hidden" name="estado" value="completada">
+                        <button class="btn btn-outline-secondary btn-sm py-0" style="font-size:.72rem">Completada</button>
+                      </form>
+                      <form method="post" action="{{ url_for('citas.cambiar_estado', cita_id=c.id) }}">
+                        <input type="hidden" name="estado" value="cancelada">
+                        <button class="btn btn-outline-secondary btn-sm py-0" style="font-size:.72rem">Cancelar</button>
+                      </form>
+                    </div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="kd-vacio py-4">
+              <strong>Sin citas registradas</strong>
+              <a href="{{ url_for('citas.nueva', paciente_id=paciente.id) }}">Agendar una</a>.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -560,6 +684,20 @@
                 <option value="{{ clave }}">{{ info.etiqueta }}</option>
               {% endfor %}
             </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="profesional_id_tratamiento">Profesional</label>
+            <select class="form-select" id="profesional_id_tratamiento" name="profesional_id">
+              <option value="">Sin asignar</option>
+              {% for p in profesionales %}
+                <option value="{{ p.id }}">{{ p.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="pieza_tratamiento">Pieza (opcional)</label>
+            <input class="form-control dato" type="number" id="pieza_tratamiento" name="pieza"
+                   placeholder="Ej: 36" min="11" max="85">
           </div>
         </div>
       </div>
@@ -708,4 +846,22 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/odontograma.js') }}"></script>
+<script>
+  const PACIENTE_ID_ACTUAL = {{ paciente.id }};
+
+  function guardarVersionOdontograma(tipo) {
+    const etiqueta = tipo === 'inicial' ? 'Inicial' : 'Alta';
+    if (!confirm(`Se guardará el estado ACTUAL del odontograma como "${etiqueta}". Si ya existía una versión "${etiqueta}", se reemplaza. ¿Continuar?`)) return;
+    fetch(`/odontograma/${PACIENTE_ID_ACTUAL}/version/${tipo}`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => { if (data.ok) location.reload(); });
+  }
+
+  function vincularAPresupuesto(pieza, descripcion) {
+    document.getElementById('descripcion_tratamiento').value = descripcion;
+    document.getElementById('pieza_tratamiento').value = pieza;
+    const modal = new bootstrap.Modal(document.getElementById('modalTratamiento'));
+    modal.show();
+  }
+</script>
 {% endblock %}
