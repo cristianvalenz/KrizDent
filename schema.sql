@@ -284,6 +284,12 @@ create table if not exists periodontogramas (
     indice_placa       numeric(5,2) not null default 0,
     indice_sangrado    numeric(5,2) not null default 0,
     sitios_supuracion  int not null default 0,
+    media_sondaje      numeric(5,2) not null default 0,   -- profundidad media (mm)
+    media_nic          numeric(5,2) not null default 0,   -- nivel de inserción medio (mm)
+    -- datos: { "<fdi>": { ausencia, implante, movilidad, pronostico,
+    --                     vestibular|palatina: { furca, anchura,
+    --                       sangrado[3], supuracion[3], placa[3],
+    --                       margen[3], sondaje[3] } } }
     datos              jsonb not null default '{}',
     notas              text,
     creado_en          timestamptz not null default now()

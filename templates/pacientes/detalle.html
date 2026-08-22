@@ -199,48 +199,53 @@
 
           <div class="card-body">
             <!-- Paleta: dos grupos, según si el estado aplica a la pieza entera o a una cara -->
-            <div class="kd-paleta-grupo mb-2">
-              <span class="kd-paleta-etiqueta small text-muted">Pieza completa:</span>
-              <div class="kd-paleta">
-                {% for clave in ["sano", "ausente", "corona_buena", "corona_mala", "remanente_radicular"] %}
-                  {% set info = estados_pieza[clave] %}
-                  <button class="kd-pincel" type="button" data-estado="{{ clave }}" data-nivel="pieza">
-                    <span class="muestra" style="background:{{ info.color }}"></span>
-                    {{ info.etiqueta }}
+            <!-- Barra de pinceles: se elige uno y luego se pinta sobre el diagrama.
+                 Agrupada por alcance, porque no es lo mismo marcar una cara que
+                 la pieza entera. -->
+            <div class="kd-barra-pincel mb-3">
+              <div class="kd-pincel-grupo">
+                <span class="kd-pincel-titulo">Por cara</span>
+                <div class="kd-paleta">
+                  {% for clave in ["caries", "obturado", "obturado_mal"] %}
+                    {% set info = estados_cara[clave] %}
+                    <button class="kd-pincel" type="button" data-estado="{{ clave }}" data-nivel="cara"
+                            title="Pinta solo el sector exacto (oclusal, mesial, distal, vestibular o lingual) donde hagas clic.">
+                      <span class="muestra" style="background:{{ info.color }}"></span>
+                      {{ info.corto }}
+                    </button>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <div class="kd-pincel-grupo">
+                <span class="kd-pincel-titulo">Pieza completa</span>
+                <div class="kd-paleta">
+                  {% for clave in ["sano", "ausente", "corona_buena", "corona_mala", "remanente_radicular"] %}
+                    {% set info = estados_pieza[clave] %}
+                    <button class="kd-pincel" type="button" data-estado="{{ clave }}" data-nivel="pieza"
+                            title="Pinta el diente entero al hacer clic en cualquier parte de él.">
+                      <span class="muestra" style="background:{{ info.color }}"></span>
+                      {{ info.corto }}
+                    </button>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <div class="kd-pincel-grupo">
+                <span class="kd-pincel-titulo">Perno</span>
+                <div class="kd-paleta">
+                  <button class="kd-pincel" type="button" data-estado="perno" data-nivel="perno"
+                          title="Independiente de la corona: una pieza puede tener perno sin corona, o corona sin perno. Clic en la pieza para alternar.">
+                    <span class="muestra kd-muestra-perno"></span>
+                    Alternar perno
                   </button>
-                {% endfor %}
+                </div>
               </div>
             </div>
 
-            <div class="kd-paleta-grupo mb-2">
-              <span class="kd-paleta-etiqueta small text-muted">Perno (independiente de la corona):</span>
-              <div class="kd-paleta">
-                <button class="kd-pincel" type="button" data-estado="perno" data-nivel="perno">
-                  <span class="muestra kd-muestra-perno"></span>
-                  Con perno / sin perno (clic para alternar)
-                </button>
-              </div>
-            </div>
-
-            <div class="kd-paleta-grupo mb-3">
-              <span class="kd-paleta-etiqueta small text-muted">Por cara (clic en el sector):</span>
-              <div class="kd-paleta">
-                {% for clave in ["caries", "obturado", "obturado_mal"] %}
-                  {% set info = estados_cara[clave] %}
-                  <button class="kd-pincel" type="button" data-estado="{{ clave }}" data-nivel="cara">
-                    <span class="muestra" style="background:{{ info.color }}"></span>
-                    {{ info.etiqueta }}
-                  </button>
-                {% endfor %}
-              </div>
-            </div>
-
-            <p class="small text-muted mb-2">
-              "Pieza completa" pinta todo el diente al hacer clic en él. "Por cara" solo
-              pinta el sector exacto (oclusal, mesial, distal, vestibular o lingual) donde
-              hiciste clic. "Perno" es independiente de la corona: elige ese pincel y haz
-              clic en la pieza para marcarla o desmarcarla (una pieza puede tener perno
-              sin corona, o corona sin perno). Cada cambio se guarda solo.
+            <p class="kd-pista mb-2">
+              Elige un pincel y haz clic sobre el diagrama — cada cambio se guarda solo.
+              Al pasar el mouse sobre un sector verás de qué cara se trata.
             </p>
 
             <!-- El JS lee estos data-* y dibuja el SVG dentro del contenedor -->

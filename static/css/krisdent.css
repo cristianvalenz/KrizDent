@@ -20,7 +20,9 @@
     --kd-verde:      #2E8B6E;   /* completado */
 
     --kd-radio: 10px;
-    --kd-sombra: 0 1px 2px rgba(22, 35, 46, .06), 0 8px 24px rgba(22, 35, 46, .05);
+    /* Sombra corta y definida: en una interfaz clínica lee como precisión,
+       no como tarjeta flotante. */
+    --kd-sombra: 0 1px 2px rgba(22, 35, 46, .05), 0 3px 10px rgba(22, 35, 46, .04);
 }
 
 /* ---------- Base ---------- */
@@ -283,14 +285,17 @@ a:hover { color: var(--kd-clinico-alt); }
     overflow-x: auto;      /* en móvil se desplaza en horizontal, no se deforma */
     padding: 6px 0;
 }
-.kd-odontograma svg { display: block; min-width: 560px; margin: 0 auto; }
+.kd-odontograma svg { display: block; min-width: 660px; margin: 0 auto; }
 
-/* Cada diente es un <g> con clase .diente, dividido en 5 caras clickeables */
+/* Fondo tenue de cada arcada, detrás de todo el diagrama */
+.kd-banda-arcada { fill: #F7FAFB; }
+
+/* Cada diente es un <g> con clase .diente: silueta anatómica + 5 caras clickeables */
 .diente { cursor: pointer; }
 .diente .borde-diente {
     fill: none;
     stroke: #A9BAC4;
-    stroke-width: 1.4;
+    stroke-width: 1.3;
     pointer-events: none;
 }
 .diente .cara-diente {
@@ -299,7 +304,14 @@ a:hover { color: var(--kd-clinico-alt); }
     stroke-width: .75;
     transition: fill .12s, stroke .12s;
 }
+/* Al pasar el mouse se resalta la pieza completa: silueta, cuadro y número */
 .diente:hover .borde-diente { stroke: var(--kd-clinico); stroke-width: 2.2; }
+.diente:hover .silueta-corona,
+.diente:hover .silueta-raiz { stroke: var(--kd-clinico); }
+.diente:hover .numero-pieza { fill: var(--kd-clinico); }
+/* ...y el sector concreto que se va a pintar, para no marcar la cara equivocada */
+.diente .cara-diente:hover { stroke: var(--kd-tinta); stroke-width: 1.8; }
+
 .diente:focus { outline: none; }
 .diente:focus-visible .borde-diente {
     stroke: var(--kd-tinta);
@@ -307,10 +319,11 @@ a:hover { color: var(--kd-clinico-alt); }
 }
 .diente .numero-pieza {
     font-family: "IBM Plex Mono", monospace;
-    font-size: 10px;
+    font-size: 11px;
     fill: #7A8A95;
     text-anchor: middle;
     user-select: none;
+    transition: fill .12s;
 }
 .diente.marcado .numero-pieza { fill: var(--kd-tinta); font-weight: 600; }
 
@@ -318,10 +331,11 @@ a:hover { color: var(--kd-clinico-alt); }
    Refleja el mismo estado que el cuadro de caras (ver data-pieza en el JS). */
 .diente-silueta .silueta-corona,
 .diente-silueta .silueta-raiz {
-    fill: #F3F5F7;
-    stroke: #C6D0D6;
-    stroke-width: 1;
-    transition: fill .12s, opacity .12s;
+    fill: #FFFFFF;
+    stroke: #9FB2BE;
+    stroke-width: 1.1;
+    stroke-linejoin: round;
+    transition: fill .12s, stroke .12s, opacity .12s;
 }
 
 /* Ausente: no queda nada de la pieza — corona y raíz se apagan por igual. */
@@ -369,26 +383,53 @@ a:hover { color: var(--kd-clinico-alt); }
 
 .kd-cuadrante-rotulo {
     font-family: "IBM Plex Mono", monospace;
-    font-size: 9px;
+    font-size: 9.5px;
+    font-weight: 500;
     letter-spacing: .1em;
-    fill: #A9BAC4;
+    fill: #9AAAB5;
     text-anchor: middle;
+    user-select: none;
 }
-.kd-eje-central { stroke: var(--kd-mineral); stroke-width: 1; }
+.kd-eje-central { stroke: #C6D0D6; stroke-width: 1; stroke-dasharray: 3 3; }
 
-/* Paleta de estados: se elige uno y luego se pintan los dientes */
-.kd-paleta-grupo { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.kd-paleta-etiqueta { min-width: 150px; }
-.kd-paleta { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Barra de pinceles: se elige uno y luego se pintan los dientes.
+   Los grupos separan el alcance del pincel (una cara, la pieza entera, el perno). */
+.kd-barra-pincel {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px 18px;
+    padding: 12px 14px;
+    background: var(--kd-porcelana);
+    border: 1px solid var(--kd-mineral);
+    border-radius: var(--kd-radio);
+}
+.kd-pincel-grupo { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 9px; }
+.kd-pincel-grupo + .kd-pincel-grupo {
+    border-left: 1px solid var(--kd-mineral);
+    padding-left: 18px;
+}
+.kd-pincel-titulo {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .6rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #8A97A0;
+}
+@media (max-width: 767px) {
+    .kd-pincel-grupo + .kd-pincel-grupo { border-left: 0; padding-left: 0; }
+}
+
+.kd-paleta { display: flex; flex-wrap: wrap; gap: 7px; }
 .kd-pincel {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 6px;
     border: 1.5px solid var(--kd-mineral);
     background: #fff;
     border-radius: 999px;
-    padding: 6px 13px 6px 8px;
-    font-size: .82rem;
+    padding: 5px 12px 5px 7px;
+    font-size: .8rem;
     font-weight: 500;
     cursor: pointer;
     transition: border-color .13s, box-shadow .13s;
@@ -399,10 +440,13 @@ a:hover { color: var(--kd-clinico-alt); }
     box-shadow: 0 0 0 3px rgba(22, 35, 46, .09);
 }
 .kd-pincel .muestra {
-    width: 15px; height: 15px;
-    border-radius: 4px;
+    width: 14px; height: 14px;
+    border-radius: 3px;
     border: 1px solid rgba(22, 35, 46, .22);
 }
+
+/* Línea de ayuda breve bajo una barra de herramientas */
+.kd-pista { font-size: .8rem; color: #6C7C88; }
 
 /* Muestra del pincel de perno: una línea vertical, no un color de estado */
 .kd-muestra-perno {
@@ -457,56 +501,88 @@ a:hover { color: var(--kd-clinico-alt); }
     .kd-tabs-paciente { position: static; flex-direction: row !important; flex-wrap: wrap; }
 }
 
-/* Periodontograma: tabla transpuesta (piezas en columnas) y gráfico SVG */
-.kd-perio-scroll { overflow-x: auto; }
-.kd-perio-tabla { min-width: max-content; }
-.kd-perio-tabla th, .kd-perio-tabla td { white-space: nowrap; padding: 4px 6px; }
-.kd-perio-rotulo {
-    position: sticky; left: 0;
-    background: var(--kd-esmalte);
-    font-size: .68rem; font-weight: 600; color: #6C7C88;
-    text-align: right; z-index: 1;
-}
-.kd-perio-num { width: 52px; text-align: center; padding: 2px; }
-.kd-perio-fila-pieza td, .kd-perio-fila-pieza th { background: var(--kd-porcelana); }
-.kd-perio-fila-vestibular { background: #FBFDFE; }
+/* =====================================================================
+   PERIODONTOGRAMA — carta clínica: una columna por pieza, con los dientes
+   dibujados dentro de la misma cuadrícula que sus mediciones.
+   ===================================================================== */
+.kd-pg-scroll { overflow-x: auto; padding-bottom: 4px; }
+.kd-pg-tabla { border-collapse: collapse; min-width: max-content; }
 
-/* Toggle de sangrado/placa/supuración: checkbox oculto + cuadrito de color */
-.kd-perio-toggle { display: inline-flex; cursor: pointer; }
-.kd-perio-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
-.kd-perio-toggle span {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 20px; height: 20px;
-    border: 1.5px solid var(--kd-mineral);
-    border-radius: 4px;
-    background: #fff;
-    font-size: .58rem; color: transparent;
+.kd-pg-rotulo {
+    position: sticky; left: 0; z-index: 2;
+    background: var(--kd-esmalte);
+    padding: 1px 10px 1px 0;
+    text-align: right; white-space: nowrap;
+    font-size: .58rem; font-weight: 600; letter-spacing: .03em;
+    text-transform: uppercase; color: #7A8A95;
+}
+.kd-pg-rotulo-cara { color: var(--kd-clinico); }
+
+.kd-pg-celda { width: 58px; min-width: 58px; padding: 1px 2px; text-align: center; }
+.kd-pg-div { border-left: 2px solid var(--kd-clinico); }
+
+.kd-pg-arcada th {
+    padding: 14px 0 4px;
+    text-align: center; color: var(--kd-clinico);
+    font-size: .7rem; font-weight: 700; letter-spacing: .16em;
+    border-bottom: 2px solid var(--kd-clinico);
+}
+.kd-pg-piezas th {
+    padding: 5px 2px;
+    font: 600 .7rem "IBM Plex Mono", monospace; color: var(--kd-clinico);
+}
+
+/* Trío de sitios: mesial · central · distal */
+.kd-pg-trio { display: flex; gap: 1px; justify-content: center; }
+.kd-pg-mini, .kd-pg-caja {
+    height: 17px; padding: 0;
+    border: 1px solid var(--kd-mineral); border-radius: 2px;
+    background: #fff; color: var(--kd-tinta);
+    font: 9px "IBM Plex Mono", monospace; text-align: center;
+}
+.kd-pg-mini { width: 17px; }
+.kd-pg-caja { width: 34px; }
+.kd-pg-mini:focus, .kd-pg-caja:focus { outline: 1px solid var(--kd-clinico); border-color: var(--kd-clinico); }
+.kd-pg-mini::-webkit-outer-spin-button,
+.kd-pg-mini::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.kd-pg-mini[type=number] { -moz-appearance: textfield; }
+.kd-pg-azul { color: var(--kd-clinico); border-color: #BBD3DE; }
+
+/* Casillas de sangrado / placa / supuración / ausencia / implante */
+.kd-pg-tog { display: inline-flex; cursor: pointer; }
+.kd-pg-tog input { position: absolute; opacity: 0; width: 0; height: 0; }
+.kd-pg-tog span {
+    display: block; width: 15px; height: 15px;
+    border: 1px solid var(--kd-mineral); border-radius: 2px;
+    background: #EDF1F3;
     transition: background .1s, border-color .1s;
 }
-.kd-perio-toggle-sangrado input:checked + span { background: var(--kd-lesion); border-color: var(--kd-lesion); }
-.kd-perio-toggle-placa input:checked + span { background: var(--kd-clinico); border-color: var(--kd-clinico); }
-.kd-perio-toggle-supuracion { margin-right: 2px; }
-.kd-perio-toggle-supuracion span { width: 16px; height: 16px; color: #8A97A0; }
-.kd-perio-toggle-supuracion input:checked + span { background: #C9A227; border-color: #C9A227; color: #fff; }
+.kd-pg-tog-sangrado input:checked + span   { background: var(--kd-lesion); border-color: var(--kd-lesion); }
+.kd-pg-tog-placa input:checked + span      { background: var(--kd-clinico); border-color: var(--kd-clinico); }
+.kd-pg-tog-supuracion input:checked + span { background: #C9A227; border-color: #C9A227; }
+.kd-pg-tog-marca span { background: #fff; }
+.kd-pg-tog-marca input:checked + span      { background: var(--kd-tinta); border-color: var(--kd-tinta); }
 
-.kd-perio-leyenda { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; }
-.kd-perio-punto { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
-.kd-punto-sangrado { background: var(--kd-lesion); }
-.kd-punto-placa { background: var(--kd-clinico); }
-.kd-punto-sano { background: #fff; border: 1.5px solid var(--kd-mineral); }
-
-.kd-perio-svg { display: block; }
-.kd-perio-svg-fdi { font: 9px "IBM Plex Mono", monospace; fill: #7A8A95; }
-.kd-perio-svg-num { font: 8px "IBM Plex Mono", monospace; fill: #5C6D79; }
-.kd-perio-svg-lbl { font: 700 9px "IBM Plex Mono", monospace; fill: #6C7C88; text-transform: uppercase; letter-spacing: .04em; }
-
-.kd-perio-cuadrantes th { background: var(--kd-clinico); color: #fff; font-size: .68rem; text-transform: uppercase; letter-spacing: .04em; }
-.kd-perio-fila-etiqueta th {
-    text-align: left; background: var(--kd-porcelana); color: #6C7C88;
-    font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
-    padding: 3px 8px;
+/* Dientes dibujados sobre papel milimetrado */
+.kd-pg-celda-diente { padding: 0; }
+.kd-pg-fila-dientes td {
+    background-image: repeating-linear-gradient(to bottom, transparent 0 6px, #EDF3F6 6px 7px);
 }
-.kd-perio-fila-etiqueta-b { border-bottom: 1px solid var(--kd-mineral); }
+.kd-pg-diente { display: block; width: 100%; height: 76px; }
+
+.kd-pg-medias { display: flex; flex-wrap: wrap; gap: 18px; font-size: .74rem; color: #6C7C88; }
+.kd-pg-indices { display: flex; flex-wrap: wrap; gap: 14px; font-size: .74rem; font-weight: 600; }
+.kd-pg-idx-placa { color: var(--kd-clinico); }
+.kd-pg-idx-sangrado { color: var(--kd-lesion); }
+
+.kd-pg-leyenda { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-size: .7rem; color: #6C7C88; }
+.kd-pg-leyenda span { display: inline-flex; align-items: center; gap: 5px; }
+.kd-pg-muestra { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
+.kd-pg-muestra-sangrado   { background: var(--kd-lesion); }
+.kd-pg-muestra-placa      { background: var(--kd-clinico); }
+.kd-pg-muestra-supuracion { background: #C9A227; }
+.kd-pg-muestra-linea-azul { height: 3px; border-radius: 0; background: var(--kd-clinico); }
+.kd-pg-muestra-linea-roja { height: 3px; border-radius: 0; background: var(--kd-lesion); }
 
 /* Calendario mensual de citas */
 .kd-calendario td { width: 14.28%; height: 108px; vertical-align: top; padding: 6px; }
@@ -599,4 +675,87 @@ a:hover { color: var(--kd-clinico-alt); }
 /* Respeta la preferencia del sistema de reducir animaciones */
 @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
+}
+
+/* =====================================================================
+   FOCO, SELECCIÓN Y DESPLAZAMIENTO
+   ===================================================================== */
+/* Anillo de foco propio y consistente: aparece al navegar con teclado,
+   no al hacer clic con el mouse. */
+:is(a, button, .btn, .nav-link, [tabindex]):focus-visible {
+    outline: 2px solid var(--kd-clinico);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+.kd-sidebar :is(a, button):focus-visible { outline-color: #7FC4DC; }
+
+::selection { background: rgba(27, 110, 140, .18); }
+
+/* Las zonas anchas (odontograma, carta periodontal, tablas) se desplazan en
+   horizontal: una barra fina estorba menos que la del sistema. */
+.kd-odontograma, .kd-pg-scroll, .table-responsive {
+    scrollbar-width: thin;
+    scrollbar-color: #C6D0D6 transparent;
+}
+.kd-odontograma::-webkit-scrollbar,
+.kd-pg-scroll::-webkit-scrollbar,
+.table-responsive::-webkit-scrollbar { height: 9px; width: 9px; }
+.kd-odontograma::-webkit-scrollbar-track,
+.kd-pg-scroll::-webkit-scrollbar-track,
+.table-responsive::-webkit-scrollbar-track { background: transparent; }
+.kd-odontograma::-webkit-scrollbar-thumb,
+.kd-pg-scroll::-webkit-scrollbar-thumb,
+.table-responsive::-webkit-scrollbar-thumb { background: #C6D0D6; border-radius: 999px; }
+.kd-odontograma::-webkit-scrollbar-thumb:hover,
+.kd-pg-scroll::-webkit-scrollbar-thumb:hover,
+.table-responsive::-webkit-scrollbar-thumb:hover { background: #A9BAC4; }
+
+/* =====================================================================
+   IMPRESIÓN
+   La ficha del paciente se imprime a menudo. En papel sobran la navegación
+   y los botones, y las pestañas deben salir TODAS — no solo la que estaba
+   abierta en pantalla.
+   ===================================================================== */
+@media print {
+    @page { margin: 12mm; }
+
+    body { background: #fff; font-size: 11.5px; }
+
+    .kd-sidebar,
+    .kd-tabs-paciente,
+    .kd-barra-pincel,
+    .kd-pista,
+    .btn,
+    .modal,
+    .btn-close { display: none !important; }
+
+    .kd-contenido { margin-left: 0; padding: 0; }
+
+    /* Todas las pestañas, una detrás de otra */
+    .tab-content > .tab-pane { display: block !important; opacity: 1 !important; }
+
+    .card {
+        box-shadow: none;
+        border-color: #C9D3D8;
+        break-inside: avoid;
+        margin-bottom: 10px;
+    }
+    .card-header { padding: 8px 12px; }
+    .card-body { padding: 12px; }
+
+    /* En papel no hay scroll: nada debe quedar recortado */
+    .kd-odontograma, .kd-pg-scroll, .table-responsive { overflow: visible !important; }
+    .kd-odontograma svg { min-width: 0; }
+
+    /* La barra lateral no se imprime, así que el membrete va aquí */
+    .kd-contenido::before {
+        content: "KrizDent · Centro odontológico";
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: -.01em;
+        border-bottom: 1.5px solid var(--kd-tinta);
+        padding-bottom: 6px;
+        margin-bottom: 14px;
+    }
 }

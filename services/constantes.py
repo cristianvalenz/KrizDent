@@ -46,17 +46,19 @@ ESTADOS_CITA = {
 # --- Odontograma -----------------------------------------------------------
 # El color de cada estado sigue la convención clínica del odontograma:
 # rojo = patología por tratar, azul = trabajo ya realizado.
+# "corto" es el rótulo para la paleta del odontograma, donde el espacio manda;
+# "etiqueta" es el nombre completo que va en tablas, informes y PDF.
 ESTADOS_PIEZA = {
-    "sano":     {"etiqueta": "Sano",     "color": "#FFFFFF", "texto": "#16232E"},
-    "caries":   {"etiqueta": "Caries",   "color": "#D64545", "texto": "#FFFFFF"},
-    "ausente":  {"etiqueta": "Ausente",  "color": "#8A97A0", "texto": "#FFFFFF"},
-    "obturado": {"etiqueta": "Obturado", "color": "#1B6E8C", "texto": "#FFFFFF"},
+    "sano":     {"etiqueta": "Sano",     "corto": "Sano",     "color": "#FFFFFF", "texto": "#16232E"},
+    "caries":   {"etiqueta": "Caries",   "corto": "Caries",   "color": "#D64545", "texto": "#FFFFFF"},
+    "ausente":  {"etiqueta": "Ausente",  "corto": "Ausente",  "color": "#8A97A0", "texto": "#FFFFFF"},
+    "obturado": {"etiqueta": "Obturado", "corto": "Obturado", "color": "#1B6E8C", "texto": "#FFFFFF"},
     # Corona protésica: independiente del perno (ver CON_PERNO más abajo).
-    "corona_buena": {"etiqueta": "Corona (buen estado)", "color": "#2E8B6E", "texto": "#FFFFFF"},
-    "corona_mala":  {"etiqueta": "Corona (mal estado)",  "color": "#E08E3C", "texto": "#16232E"},
+    "corona_buena": {"etiqueta": "Corona (buen estado)", "corto": "Corona buena", "color": "#2E8B6E", "texto": "#FFFFFF"},
+    "corona_mala":  {"etiqueta": "Corona (mal estado)",  "corto": "Corona mala",  "color": "#E08E3C", "texto": "#16232E"},
     # Solo queda la raíz — la corona está destruida o perdida. Distinto de
     # "ausente" (no queda nada de la pieza): aquí la raíz sigue en el hueso.
-    "remanente_radicular": {"etiqueta": "Remanente radicular", "color": "#D64545", "texto": "#FFFFFF"},
+    "remanente_radicular": {"etiqueta": "Remanente radicular", "corto": "Remanente", "color": "#D64545", "texto": "#FFFFFF"},
 }
 
 # "sano" y "ausente"/"corona" pintan la pieza entera (van a la tabla odontograma).
@@ -70,7 +72,7 @@ ESTADOS_CARA = {
     # Obturación deteriorada / filtrada / con caries secundaria: mismo trabajo
     # ya realizado que "obturado", pero necesita revisión — por eso el naranja,
     # a medio camino entre el rojo (patología) y el teal (trabajo sano).
-    "obturado_mal": {"etiqueta": "Obturado (mal estado)", "color": "#E08E3C", "texto": "#16232E"},
+    "obturado_mal": {"etiqueta": "Obturado (mal estado)", "corto": "Obturado malo", "color": "#E08E3C", "texto": "#16232E"},
 }
 
 # El perno (poste/muñón) es un booleano independiente del estado de la pieza:

@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% block titulo %}Periodontograma · {{ paciente.nombre }}{% endblock %}
+
+{# --- Filas de la pieza completa (una casilla por diente) ------------- #}
+{% macro fila_check(piezas, medio, datos, campo, etiqueta) %}
+<tr>
+  <th class="kd-pg-rotulo">{{ etiqueta }}</th>
+  {% for fdi in piezas %}
+    <td class="kd-pg-celda{{ ' kd-pg-div' if loop.index0 == medio }}">
+      <label class="kd-pg-tog kd-pg-tog-marca">
+        <input type="checkbox" name="{{ campo }}_{{ fdi }}" {{ 'checked' if datos[fdi][campo] }}><span></span>
+      </label>
+    </td>
+  {% endfor %}
+</tr>
+{% endmacro %}
+
+{% macro fila_pieza_texto(piezas, medio, datos, campo, etiqueta) %}
+<tr>
+  <th class="kd-pg-rotulo">{{ etiqueta }}</th>
+  {% for fdi in piezas %}
+    <td class="kd-pg-celda{{ ' kd-pg-div' if loop.index0 == medio }}">
+      <input class="kd-pg-caja" type="text" maxlength="3" name="{{ campo }}_{{ fdi }}" value="{{ datos[fdi][campo] }}">
+    </td>
+  {% endfor %}
+</tr>
+{% endmacro %}
+
+{# --- Filas por cara: un dato o tres sitios --------------------------- #}
+{% macro fila_cara_texto(piezas, medio, datos, cara, campo, etiqueta, ancho='caja') %}
+<tr>
+  <th class="kd-pg-rotulo">{{ etiqueta }}</th>
+  {% for fdi in piezas %}
+    {% set v = datos[fdi][cara][campo] %}
+    <td class="kd-pg-celda{{ ' kd-pg-div' if loop.index0 == medio }}">
+      <input class="kd-pg-{{ ancho }}" type="text" maxlength="3" name="{{ campo }}_{{ fdi }}_{{ cara }}"
+             value="{{ v if v is not none else '' }}">
+    </td>
+  {% endfor %}
+</tr>
+{% endmacro %}
+
+{% macro fila_trio_num(piezas, medio, datos, cara, campo, etiqueta, clase='') %}
+<tr>
+  <th class="kd-pg-rotulo">{{ etiqueta }}</th>
+  {% for fdi in piezas %}
+    <td class="kd-pg-celda{{ ' kd-pg-div' if loop.index0 == medio }}">
+      <div class="kd-pg-trio">
+        {% for i in [0, 1, 2] %}
+          {% set v = datos[fdi][cara][campo][i] %}
+          <input class="kd-pg-mini {{ clase }}" type="number" min="-9" max="20"
+                 name="{{ campo }}_{{ fdi }}_{{ cara }}_{{ i }}" value="{{ v if v is not none else '' }}">
+        {% endfor %}
+      </div>
+    </td>
+  {% endfor %}
+</tr>
+{% endmacro %}
+
+{% macro fila_trio_tog(piezas, medio, datos, cara, campo, clase, etiqueta) %}
+<tr>
+  <th class="kd-pg-rotulo">{{ etiqueta }}</th>
+  {% for fdi in piezas %}
+    <td class="kd-pg-celda{{ ' kd-pg-div' if loop.index0 == medio }}">
+      <div class="kd-pg-trio">
+        {% for i in [0, 1, 2] %}
+          <label class="kd-pg-tog {{ clase }}">
+            <input type="checkbox" name="{{ campo }}_{{ fdi }}_{{ cara }}_{{ i }}"
+                   {{ 'checked' if datos[fdi][cara][campo][i] }}><span></span>
+          </label>
+        {% endfor %}
+      </div>
+    </td>
+  {% endfor %}
+</tr>
+{% endmacro %}
+
+{# --- Fila de dientes dibujados --------------------------------------- #}
+{% macro fila_dientes(dientes, medio, etiqueta, cara, flip) %}
+<tr class="kd-pg-fila-dientes">
+  <th class="kd-pg-rotulo kd-pg-rotulo-cara">{{ etiqueta }}</th>
+  {% for d in dientes %}
+    {% set g = d.geo_vestibular if cara == 'vestibular' else d.geo_palatina %}
+    <td class="kd-pg-celda kd-pg-celda-diente{{ ' kd-pg-div' if loop.index0 == medio }}">
+      <svg viewBox="0 0 40 92" class="kd-pg-diente">
+        <g{% if flip %} transform="translate(0,92) scale(1,-1)"{% endif %}>
+          {% if d.ausencia %}
+            <line x1="9" y1="18" x2="31" y2="76" stroke="#C6D0D6" stroke-width="2.5"/>
+            <line x1="31" y1="18" x2="9" y2="76" stroke="#C6D0D6" stroke-width="2.5"/>
+          {% else %}
+            {% for r in d.raices %}
+              <path d="{{ r }}" fill="{{ '#DDE7EC' if d.implante else '#fff' }}" stroke="#6B7B87" stroke-width="1"/>
+            {% endfor %}
+            <path d="{{ d.corona }}" fill="{{ '#DDE7EC' if d.implante else '#fff' }}" stroke="#6B7B87" stroke-width="1"/>
+          {% endif %}
+          <polygon points="{{ g.area }}" fill="#D64545" fill-opacity=".15"/>
+          <polyline points="{{ g.margen }}" fill="none" stroke="#1B6E8C" stroke-width="1.3"/>
+          <polyline points="{{ g.fondo }}" fill="none" stroke="#D64545" stroke-width="1.5"/>
+        </g>
+      </svg>
+    </td>
+  {% endfor %}
+</tr>
+{% endmacro %}
+
+{% macro cabecera(piezas, medio, titulo) %}
+<tr class="kd-pg-arcada">
+  <th class="kd-pg-rotulo"></th>
+  <th colspan="{{ piezas | length }}">{{ titulo }}</th>
+</tr>
+<tr class="kd-pg-piezas">
+  <th class="kd-pg-rotulo"></th>
+  {% for fdi in piezas %}<th class="kd-pg-celda{{ ' kd-pg-div' if loop.index0 == medio }}">{{ fdi }}</th>{% endfor %}
+</tr>
+{% endmacro %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">Periodontograma{% if p %} · {{ p.fecha | fecha }}{% endif %}</p>
+    <h1>{{ paciente.nombre }}</h1>
+  </div>
+  <div class="d-flex gap-2">
+    {% if p %}
+      <form method="post" action="{{ url_for('periodontograma.eliminar', periodontograma_id=p.id) }}"
+            onsubmit="return confirm('¿Eliminar este periodontograma?')">
+        <button class="btn btn-outline-danger btn-sm" type="submit">Eliminar</button>
+      </form>
+    {% endif %}
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('pacientes.detalle', paciente_id=paciente.id) }}">Volver a la ficha</a>
+  </div>
+</div>
+
+<form method="post" action="{{ accion }}" class="card">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div class="kd-pg-medias">
+      <span>Media de prof. de sondaje: <strong>{{ resumen.media_sondaje }} mm</strong></span>
+      <span>Media de nivel de inserción: <strong>{{ resumen.media_nic }} mm</strong></span>
+    </div>
+    <div class="kd-pg-indices">
+      <span class="kd-pg-idx-placa">{{ resumen.indice_placa }}% Placa</span>
+      <span class="kd-pg-idx-sangrado">{{ resumen.indice_sangrado }}% Sangrado al sondaje</span>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="kd-pg-scroll">
+      <table class="kd-pg-tabla">
+        <tbody>
+          {{ cabecera(fila_superior, medio_superior, 'SUPERIOR') }}
+          {{ fila_check(fila_superior, medio_superior, datos, 'ausencia', 'Ausencia') }}
+          {{ fila_check(fila_superior, medio_superior, datos, 'implante', 'Implante') }}
+          {{ fila_pieza_texto(fila_superior, medio_superior, datos, 'movilidad', 'Movilidad') }}
+          {{ fila_pieza_texto(fila_superior, medio_superior, datos, 'pronostico', 'Pronóstico') }}
+          {{ fila_cara_texto(fila_superior, medio_superior, datos, 'vestibular', 'furca', 'Furca') }}
+          {{ fila_trio_tog(fila_superior, medio_superior, datos, 'vestibular', 'sangrado', 'kd-pg-tog-sangrado', 'Sangrado') }}
+          {{ fila_trio_tog(fila_superior, medio_superior, datos, 'vestibular', 'supuracion', 'kd-pg-tog-supuracion', 'Supuración') }}
+          {{ fila_trio_tog(fila_superior, medio_superior, datos, 'vestibular', 'placa', 'kd-pg-tog-placa', 'Placa') }}
+          {{ fila_cara_texto(fila_superior, medio_superior, datos, 'vestibular', 'anchura', 'Anchura encía') }}
+          {{ fila_trio_num(fila_superior, medio_superior, datos, 'vestibular', 'margen', 'Margen gingival', 'kd-pg-azul') }}
+          {{ fila_trio_num(fila_superior, medio_superior, datos, 'vestibular', 'sondaje', 'Profundidad de sondaje') }}
+
+          {{ fila_dientes(dientes_superior, medio_superior, 'Vestibular', 'vestibular', false) }}
+          {{ fila_dientes(dientes_superior, medio_superior, 'Palatino', 'palatina', true) }}
+
+          {{ fila_trio_num(fila_superior, medio_superior, datos, 'palatina', 'sondaje', 'Profundidad de sondaje') }}
+          {{ fila_trio_num(fila_superior, medio_superior, datos, 'palatina', 'margen', 'Margen gingival', 'kd-pg-azul') }}
+          {{ fila_trio_tog(fila_superior, medio_superior, datos, 'palatina', 'placa', 'kd-pg-tog-placa', 'Placa') }}
+          {{ fila_trio_tog(fila_superior, medio_superior, datos, 'palatina', 'sangrado', 'kd-pg-tog-sangrado', 'Sangrado') }}
+          {{ fila_trio_tog(fila_superior, medio_superior, datos, 'palatina', 'supuracion', 'kd-pg-tog-supuracion', 'Supuración') }}
+          {{ fila_cara_texto(fila_superior, medio_superior, datos, 'palatina', 'furca', 'Furca') }}
+        </tbody>
+
+        <tbody class="kd-pg-arcada-inferior">
+          {{ cabecera(fila_inferior, medio_inferior, 'INFERIOR') }}
+          {{ fila_cara_texto(fila_inferior, medio_inferior, datos, 'palatina', 'furca', 'Furca') }}
+          {{ fila_trio_tog(fila_inferior, medio_inferior, datos, 'palatina', 'sangrado', 'kd-pg-tog-sangrado', 'Sangrado') }}
+          {{ fila_trio_tog(fila_inferior, medio_inferior, datos, 'palatina', 'supuracion', 'kd-pg-tog-supuracion', 'Supuración') }}
+          {{ fila_trio_tog(fila_inferior, medio_inferior, datos, 'palatina', 'placa', 'kd-pg-tog-placa', 'Placa') }}
+          {{ fila_trio_num(fila_inferior, medio_inferior, datos, 'palatina', 'margen', 'Margen gingival', 'kd-pg-azul') }}
+          {{ fila_trio_num(fila_inferior, medio_inferior, datos, 'palatina', 'sondaje', 'Profundidad de sondaje') }}
+
+          {{ fila_dientes(dientes_inferior, medio_inferior, 'Lingual', 'palatina', false) }}
+          {{ fila_dientes(dientes_inferior, medio_inferior, 'Vestibular', 'vestibular', true) }}
+
+          {{ fila_trio_num(fila_inferior, medio_inferior, datos, 'vestibular', 'sondaje', 'Profundidad de sondaje') }}
+          {{ fila_trio_num(fila_inferior, medio_inferior, datos, 'vestibular', 'margen', 'Margen gingival', 'kd-pg-azul') }}
+          {{ fila_cara_texto(fila_inferior, medio_inferior, datos, 'vestibular', 'anchura', 'Anchura encía') }}
+          {{ fila_trio_tog(fila_inferior, medio_inferior, datos, 'vestibular', 'placa', 'kd-pg-tog-placa', 'Placa') }}
+          {{ fila_trio_tog(fila_inferior, medio_inferior, datos, 'vestibular', 'sangrado', 'kd-pg-tog-sangrado', 'Sangrado') }}
+          {{ fila_trio_tog(fila_inferior, medio_inferior, datos, 'vestibular', 'supuracion', 'kd-pg-tog-supuracion', 'Supuración') }}
+          {{ fila_cara_texto(fila_inferior, medio_inferior, datos, 'vestibular', 'furca', 'Furca') }}
+          {{ fila_pieza_texto(fila_inferior, medio_inferior, datos, 'pronostico', 'Pronóstico') }}
+          {{ fila_pieza_texto(fila_inferior, medio_inferior, datos, 'movilidad', 'Movilidad') }}
+          {{ fila_check(fila_inferior, medio_inferior, datos, 'implante', 'Implante') }}
+          {{ fila_check(fila_inferior, medio_inferior, datos, 'ausencia', 'Ausencia') }}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="kd-pg-leyenda mt-3">
+      <span><i class="kd-pg-muestra kd-pg-muestra-sangrado"></i> Sangrado</span>
+      <span><i class="kd-pg-muestra kd-pg-muestra-placa"></i> Placa</span>
+      <span><i class="kd-pg-muestra kd-pg-muestra-supuracion"></i> Supuración</span>
+      <span><i class="kd-pg-muestra kd-pg-muestra-linea-azul"></i> Margen gingival</span>
+      <span><i class="kd-pg-muestra kd-pg-muestra-linea-roja"></i> Fondo de bolsa</span>
+      <span class="text-muted">Cada fila de 3 casillas = mesial · central · distal.</span>
+    </p>
+
+    <label class="form-label mt-2" for="notas">Notas</label>
+    <textarea class="form-control" id="notas" name="notas" rows="2">{{ notas }}</textarea>
+  </div>
+
+  <div class="card-header border-top border-bottom-0 d-flex gap-2 justify-content-end">
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('pacientes.detalle', paciente_id=paciente.id) }}">Cancelar</a>
+    <button class="btn btn-primary btn-sm" type="submit">Guardar periodontograma</button>
+  </div>
+</form>
+{% endblock %}

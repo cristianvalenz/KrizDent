@@ -19,27 +19,27 @@
     // 1. LAYOUT — ajusta aquí el tamaño y la posición del diagrama
     // -----------------------------------------------------------------
     const LAYOUT = {
-        radioDiente: 13,      // mitad del lado del cuadro clickeable de cada pieza
-        separacion: 6,        // espacio horizontal entre piezas
-        margenIzq: 26,        // margen izquierdo del diagrama
-        altoDiente: 30,        // alto de la corona (silueta anatómica, decorativa)
-        anchoDiente: 26,       // ancho de la silueta anatómica
-        altoRaiz: 9,           // alto de la raíz (decorativa), apoyada en el cuello de la corona
-        separacionArcadas: 10, // espacio extra entre el hemiarco derecho e izquierdo
+        radioDiente: 15,      // mitad del lado del cuadro clickeable de cada pieza
+        separacion: 7,        // espacio horizontal entre piezas
+        margenIzq: 28,        // margen izquierdo del diagrama
+        altoDiente: 26,        // alto de la corona (silueta anatómica, decorativa)
+        anchoDiente: 28,       // ancho de la silueta anatómica
+        altoRaiz: 34,          // alto de la raíz: más larga que la corona, como en la realidad
+        separacionArcadas: 16, // espacio extra entre el hemiarco derecho e izquierdo
         // De afuera hacia la línea media: [línea de ortodoncia] → raíz → corona
         // → espacio → cuadro de caras → espacio → número.
         // filaSuperiorY / filaInferiorY son el centro del cuadro (clickeable).
-        ortoSuperiorY: 14,      // altura de la línea/zigzag de ortodoncia superior
-        raizSuperiorY: 22,      // Y donde empieza (arriba) la raíz superior
-        dienteSuperiorY: 31,    // Y donde empieza (arriba) la corona superior
-        filaSuperiorY: 79,
-        numeroSuperiorY: 105,   // baseline del número, entre el cuadro y la línea media
-        filaInferiorY: 151,
-        numeroInferiorY: 125,
-        dienteInferiorY: 169,   // Y donde empieza (arriba) la corona inferior
-        raizInferiorY: 199,     // Y donde empieza (arriba) la raíz inferior
-        ortoInferiorY: 216,     // altura de la línea/zigzag de ortodoncia inferior
-        alturaTotal: 230,
+        ortoSuperiorY: 22,      // altura de la línea/zigzag de ortodoncia superior
+        raizSuperiorY: 34,      // Y donde empieza (arriba) la raíz superior
+        dienteSuperiorY: 68,    // Y donde empieza (arriba) la corona superior
+        filaSuperiorY: 112,
+        numeroSuperiorY: 140,   // baseline del número, entre el cuadro y la línea media
+        filaInferiorY: 184,
+        numeroInferiorY: 162,
+        dienteInferiorY: 202,   // Y donde empieza (arriba) la corona inferior
+        raizInferiorY: 228,     // Y donde empieza (arriba) la raíz inferior
+        ortoInferiorY: 274,     // altura de la línea/zigzag de ortodoncia inferior
+        alturaTotal: 296,
     };
 
     // Orden de las piezas tal como se ven en un odontograma frente al paciente.
@@ -66,67 +66,93 @@
         return "molar";
     }
 
-    /**
-     * Silueta anatómica decorativa (sin interacción): la cara oclusal/incisal
-     * queda en la base (abajo), el cuello hacia arriba. Solo de referencia
-     * visual, no cambia de color ni recibe clics.
-     */
-    function pathSilueta(tipo, x, y, w, h) {
-        const r = 4;
-        const cuello = w * 0.16;
-
-        if (tipo === "incisivo") {
-            return `M ${x + cuello} ${y}
-                    L ${x + w - cuello} ${y}
-                    L ${x + w} ${y + h - r}
-                    Q ${x + w} ${y + h} ${x + w - r} ${y + h}
-                    L ${x + r} ${y + h}
-                    Q ${x} ${y + h} ${x} ${y + h - r} Z`;
-        }
-        if (tipo === "canino") {
-            return `M ${x + cuello} ${y}
-                    L ${x + w - cuello} ${y}
-                    L ${x + w} ${y + h * 0.62}
-                    L ${x + w / 2} ${y + h}
-                    L ${x} ${y + h * 0.62} Z`;
-        }
-        if (tipo === "premolar") {
-            return `M ${x + cuello} ${y}
-                    L ${x + w - cuello} ${y}
-                    Q ${x + w} ${y + h * 0.5} ${x + w - 2} ${y + h - r}
-                    Q ${x + w - 2} ${y + h} ${x + w - r - 2} ${y + h}
-                    L ${x + r + 2} ${y + h}
-                    Q ${x + 2} ${y + h} ${x + 2} ${y + h - r}
-                    Q ${x} ${y + h * 0.5} ${x + cuello} ${y} Z`;
-        }
-        // molar: más ancho y cuadrado
-        return `M ${x + cuello * 0.5} ${y}
-                L ${x + w - cuello * 0.5} ${y}
-                Q ${x + w} ${y} ${x + w} ${y + r}
-                L ${x + w} ${y + h - r}
-                Q ${x + w} ${y + h} ${x + w - r} ${y + h}
-                L ${x + r} ${y + h}
-                Q ${x} ${y + h} ${x} ${y + h - r}
-                L ${x} ${y + r}
-                Q ${x} ${y} ${x + cuello * 0.5} ${y} Z`;
+    /** Las piezas de los cuadrantes 1, 2, 5 y 6 están en la arcada superior. */
+    function esSuperiorFDI(fdi) {
+        const cuadrante = Math.floor(fdi / 10);
+        return cuadrante === 1 || cuadrante === 2 || cuadrante === 5 || cuadrante === 6;
     }
 
     /**
-     * Silueta de la raíz, decorativa: un solo cono para incisivo/canino/premolar,
-     * dos prongs (bifurcada) para molar. Ocupa la porción superior del recuadro,
-     * apoyada sobre el cuello de la corona.
+     * Silueta anatómica decorativa (sin interacción): vista proximal de la
+     * corona, con el cuello arriba y la cara oclusal/incisal abajo, pegada al
+     * cuadro de caras. Cada tipo de pieza lleva su propio perfil de cúspides —
+     * un molar no se ve igual que un incisivo.
      */
-    function pathRaiz(tipo, x, y, w, h) {
-        if (tipo === "molar") {
-            const mid = x + w / 2;
-            return `M ${x + w * 0.26} ${y + h} L ${x + w * 0.16} ${y}
-                    L ${mid - 1} ${y + h * 0.35} L ${mid + 1} ${y + h * 0.35}
-                    L ${x + w * 0.84} ${y} L ${x + w * 0.74} ${y + h} Z`;
+    function pathSilueta(tipo, x, y, w, h) {
+        if (tipo === "incisivo") {
+            const c = w * 0.20, r = 3;
+            return `M ${x + c} ${y}
+                    L ${x + w - c} ${y}
+                    Q ${x + w} ${y + h * 0.55} ${x + w - 1.5} ${y + h - r}
+                    Q ${x + w - 1.5} ${y + h} ${x + w - r - 1.5} ${y + h}
+                    L ${x + r + 1.5} ${y + h}
+                    Q ${x + 1.5} ${y + h} ${x + 1.5} ${y + h - r}
+                    Q ${x} ${y + h * 0.55} ${x + c} ${y} Z`;
         }
-        const base = w * 0.5;
-        return `M ${x + (w - base) / 2} ${y + h}
-                L ${x + w / 2} ${y}
-                L ${x + (w + base) / 2} ${y + h} Z`;
+        if (tipo === "canino") {
+            const c = w * 0.20;
+            return `M ${x + c} ${y}
+                    L ${x + w - c} ${y}
+                    Q ${x + w} ${y + h * 0.5} ${x + w - 2} ${y + h * 0.66}
+                    L ${x + w / 2} ${y + h}
+                    L ${x + 2} ${y + h * 0.66}
+                    Q ${x} ${y + h * 0.5} ${x + c} ${y} Z`;
+        }
+        if (tipo === "premolar") {
+            // Dos cúspides con un surco central entre ellas.
+            const c = w * 0.17;
+            return `M ${x + c} ${y}
+                    L ${x + w - c} ${y}
+                    Q ${x + w} ${y + h * 0.5} ${x + w - 2} ${y + h * 0.70}
+                    L ${x + w * 0.74} ${y + h}
+                    Q ${x + w * 0.5} ${y + h * 0.80} ${x + w * 0.26} ${y + h}
+                    L ${x + 2} ${y + h * 0.70}
+                    Q ${x} ${y + h * 0.5} ${x + c} ${y} Z`;
+        }
+        // Molar: más ancho, más cuadrado y con dos cúspides marcadas.
+        const c = w * 0.10;
+        return `M ${x + c} ${y}
+                L ${x + w - c} ${y}
+                Q ${x + w} ${y + h * 0.28} ${x + w} ${y + h * 0.66}
+                L ${x + w * 0.78} ${y + h}
+                Q ${x + w * 0.5} ${y + h * 0.80} ${x + w * 0.22} ${y + h}
+                L ${x} ${y + h * 0.66}
+                Q ${x} ${y + h * 0.28} ${x + c} ${y} Z`;
+    }
+
+    /** Una raíz cónica de ápice redondeado, con la base apoyada en el cuello. */
+    function pathRaizUnica(cx, yApice, yBase, ancho, desvio) {
+        const b = ancho / 2;
+        const ap = cx + desvio;                 // el ápice se abre hacia afuera
+        const codo = yApice + (yBase - yApice) * 0.38;
+        return `M ${cx - b} ${yBase}
+                Q ${cx - b} ${codo} ${ap - 1.3} ${yApice + 1}
+                Q ${ap} ${yApice - 1} ${ap + 1.3} ${yApice + 1}
+                Q ${cx + b} ${codo} ${cx + b} ${yBase} Z`;
+    }
+
+    /**
+     * Raíces de la pieza, decorativas: los molares superiores llevan 3 y los
+     * inferiores 2 (como en la anatomía real); el resto, una sola. Devuelve
+     * una lista de paths porque cada raíz se dibuja por separado.
+     */
+    function pathsRaices(tipo, fdi, x, y, w, h) {
+        const yBase = y + h;
+        if (tipo === "molar") {
+            if (esSuperiorFDI(fdi)) {
+                // 3 raíces: las dos vestibulares algo más cortas que la palatina.
+                return [
+                    pathRaizUnica(x + w * 0.23, y + 5, yBase, w * 0.21, -2.5),
+                    pathRaizUnica(x + w * 0.50, y, yBase, w * 0.21, 0),
+                    pathRaizUnica(x + w * 0.77, y + 5, yBase, w * 0.21, 2.5),
+                ];
+            }
+            return [
+                pathRaizUnica(x + w * 0.30, y + 2, yBase, w * 0.25, -2.5),
+                pathRaizUnica(x + w * 0.70, y + 2, yBase, w * 0.25, 2.5),
+            ];
+        }
+        return [pathRaizUnica(x + w * 0.5, y, yBase, w * 0.30, 0)];
     }
 
     function crear(tag, atributos) {
@@ -173,7 +199,7 @@
     // 2. Construcción del diagrama — de la línea media hacia afuera:
     //    número FDI → cuadro de caras clickeable → silueta anatómica (referencia).
     // -----------------------------------------------------------------
-    function dibujarFila(svg, piezas, esSuperior, porHemiarco) {
+    function dibujarFila(svg, piezas, esSuperior, porHemiarco, nombresCara) {
         const { radioDiente: mitadCaja, altoDiente: h, anchoDiente: w, altoRaiz: hr } = LAYOUT;
         const yCentro = esSuperior ? LAYOUT.filaSuperiorY : LAYOUT.filaInferiorY;
         const yNumero = esSuperior ? LAYOUT.numeroSuperiorY : LAYOUT.numeroInferiorY;
@@ -185,37 +211,8 @@
             const cx = centroX(i, porHemiarco);
             const tipo = tipoDePieza(fdi);
 
-            // --- Silueta anatómica decorativa (corona + raíz, no interactiva) ---
-            // Cada caja se espeja sobre sí misma para la arcada inferior, de modo
-            // que la cara oclusal siempre quede pegada al cuadro de caras.
-            const grupoSilueta = crear("g", {
-                class: "diente-silueta",
-                "data-pieza": fdi,
-                "data-estado": "sano",
-                "pointer-events": "none",
-            });
-
-            const cajaCorona = crear("g", esSuperior
-                ? {}
-                : { transform: `translate(0 ${2 * yDiente + h}) scale(1 -1)` });
-            cajaCorona.appendChild(crear("path", {
-                class: "silueta-corona",
-                d: pathSilueta(tipo, cx - w / 2, yDiente, w, h),
-            }));
-            grupoSilueta.appendChild(cajaCorona);
-
-            const cajaRaiz = crear("g", esSuperior
-                ? {}
-                : { transform: `translate(0 ${2 * yRaiz + hr}) scale(1 -1)` });
-            cajaRaiz.appendChild(crear("path", {
-                class: "silueta-raiz",
-                d: pathRaiz(tipo, cx - w / 2, yRaiz, w, hr),
-            }));
-            grupoSilueta.appendChild(cajaRaiz);
-
-            svg.appendChild(grupoSilueta);
-
-            // --- Cuadro de caras clickeable -------------------------------
+            // La silueta va DENTRO del grupo de la pieza para que el diagrama se
+            // lea como un solo diente: al pasar el mouse se resaltan juntos.
             const g = crear("g", {
                 class: "diente",
                 "data-pieza": fdi,
@@ -226,19 +223,55 @@
                 "aria-label": `Pieza ${fdi}, estado sano`,
             });
 
+            // --- Silueta anatómica decorativa (corona + raíz, no interactiva) ---
+            // Cada caja se espeja sobre sí misma para la arcada inferior, de modo
+            // que la cara oclusal siempre quede pegada al cuadro de caras.
+            const grupoSilueta = crear("g", {
+                class: "diente-silueta",
+                "data-pieza": fdi,
+                "data-estado": "sano",
+                "pointer-events": "none",
+            });
+
+            const cajaRaiz = crear("g", esSuperior
+                ? {}
+                : { transform: `translate(0 ${2 * yRaiz + hr}) scale(1 -1)` });
+            pathsRaices(tipo, fdi, cx - w / 2, yRaiz, w, hr).forEach(function (d) {
+                cajaRaiz.appendChild(crear("path", { class: "silueta-raiz", d: d }));
+            });
+            grupoSilueta.appendChild(cajaRaiz);
+
+            const cajaCorona = crear("g", esSuperior
+                ? {}
+                : { transform: `translate(0 ${2 * yDiente + h}) scale(1 -1)` });
+            cajaCorona.appendChild(crear("path", {
+                class: "silueta-corona",
+                d: pathSilueta(tipo, cx - w / 2, yDiente, w, h),
+            }));
+            grupoSilueta.appendChild(cajaCorona);
+
+            g.appendChild(grupoSilueta);
+
+            // --- Cuadro de caras clickeable -------------------------------
             g.appendChild(crear("rect", {
                 class: "borde-diente",
                 x: cx - mitadCaja, y: yCentro - mitadCaja, width: L, height: L,
+                rx: 2,
             }));
 
             const caras = poligonosCaras(cx, yCentro, L);
             Object.entries(caras).forEach(function ([nombre, puntos]) {
-                g.appendChild(crear("polygon", {
+                const poligono = crear("polygon", {
                     class: "cara-diente",
                     "data-cara": nombre,
                     "data-estado": "sano",
                     points: puntos,
-                }));
+                });
+                // Tooltip nativo: saber qué sector se está por marcar sin adivinar.
+                const rotulo = crear("title", {});
+                rotulo.textContent = `Pieza ${fdi} · ${(nombresCara || {})[nombre] || nombre}`;
+                poligono.appendChild(rotulo);
+                g.appendChild(poligono);
             });
 
             // Aspa que marca la pieza ausente (oculta por CSS hasta que aplique)
@@ -277,24 +310,51 @@
         });
     }
 
-    function dibujarEjes(svg, totalPiezas, porHemiarco) {
-        const { margenIzq, numeroSuperiorY, numeroInferiorY } = LAYOUT;
+    function dibujarEjes(svg, totalPiezas, porHemiarco, filaSuperior, filaInferior) {
+        const { margenIzq, numeroSuperiorY, numeroInferiorY, alturaTotal } = LAYOUT;
         const xMedio = (centroX(porHemiarco - 1, porHemiarco) + centroX(porHemiarco, porHemiarco)) / 2;
-        const ancho = centroX(totalPiezas - 1, porHemiarco) + margenIzq;
+        const derecha = centroX(totalPiezas - 1, porHemiarco) + LAYOUT.radioDiente;
+        const izquierda = centroX(0, porHemiarco) - LAYOUT.radioDiente;
         const yMedio = (numeroSuperiorY + numeroInferiorY) / 2;
+
+        // Fondo tenue por arcada: separa visualmente maxilar de mandíbula sin
+        // meter ruido; los cuadrantes quedan definidos por la línea media.
+        [[6, yMedio - 7], [yMedio + 7, alturaTotal - 6]].forEach(function (par) {
+            svg.appendChild(crear("rect", {
+                class: "kd-banda-arcada",
+                x: izquierda - 8, y: par[0],
+                width: derecha - izquierda + 16, height: par[1] - par[0],
+                rx: 9,
+            }));
+        });
 
         // Línea media vertical
         svg.appendChild(crear("line", {
             class: "kd-eje-central",
-            x1: xMedio, y1: 2,
-            x2: xMedio, y2: LAYOUT.alturaTotal - 2,
+            x1: xMedio, y1: 6,
+            x2: xMedio, y2: alturaTotal - 6,
         }));
         // Línea horizontal que separa arcada superior de inferior
         svg.appendChild(crear("line", {
             class: "kd-eje-central",
-            x1: margenIzq - 10, y1: yMedio,
-            x2: ancho - margenIzq + 10, y2: yMedio,
+            x1: izquierda - 8, y1: yMedio,
+            x2: derecha + 8, y2: yMedio,
         }));
+
+        // Rótulo del rango FDI de cada cuadrante, en las cuatro esquinas.
+        const centroIzq = (centroX(0, porHemiarco) + centroX(porHemiarco - 1, porHemiarco)) / 2;
+        const centroDer = (centroX(porHemiarco, porHemiarco) + centroX(totalPiezas - 1, porHemiarco)) / 2;
+        const ultimo = totalPiezas - 1;
+        [
+            [centroIzq, 13, `${filaSuperior[0]}–${filaSuperior[porHemiarco - 1]}`],
+            [centroDer, 13, `${filaSuperior[porHemiarco]}–${filaSuperior[ultimo]}`],
+            [centroIzq, alturaTotal - 5, `${filaInferior[0]}–${filaInferior[porHemiarco - 1]}`],
+            [centroDer, alturaTotal - 5, `${filaInferior[porHemiarco]}–${filaInferior[ultimo]}`],
+        ].forEach(function (r) {
+            svg.appendChild(crear("text", {
+                class: "kd-cuadrante-rotulo", x: r[0], y: r[1],
+            })).textContent = r[2];
+        });
     }
 
     /**
@@ -392,9 +452,9 @@
             "aria-label": "Odontograma del paciente",
         });
 
-        dibujarEjes(svg, totalPiezas, porHemiarco);
-        dibujarFila(svg, filaSuperior, true, porHemiarco);
-        dibujarFila(svg, filaInferior, false, porHemiarco);
+        dibujarEjes(svg, totalPiezas, porHemiarco, filaSuperior, filaInferior);
+        dibujarFila(svg, filaSuperior, true, porHemiarco, nombresCara);
+        dibujarFila(svg, filaInferior, false, porHemiarco, nombresCara);
         contenedor.appendChild(svg);
 
         // Mapa fdi -> {cx, esSuperior}, para ubicar los extremos de los aparatos.
@@ -609,7 +669,8 @@
         const btnReiniciar = document.getElementById("odontograma-reiniciar");
         if (btnReiniciar) {
             btnReiniciar.addEventListener("click", function () {
-                if (!confirm("Se marcarán las 32 piezas como sanas. ¿Continuar?")) return;
+                const total = filaSuperior.length + filaInferior.length;
+                if (!confirm(`Se marcarán las ${total} piezas como sanas. ¿Continuar?`)) return;
                 fetch(`/odontograma/${pacienteId}/reiniciar`, { method: "POST" })
                     .then(function (r) { return r.json(); })
                     .then(function () {
