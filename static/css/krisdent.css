@@ -457,6 +457,48 @@ a:hover { color: var(--kd-clinico-alt); }
     .kd-tabs-paciente { position: static; flex-direction: row !important; flex-wrap: wrap; }
 }
 
+/* Periodontograma: tabla transpuesta (piezas en columnas) y gráfico SVG */
+.kd-perio-scroll { overflow-x: auto; }
+.kd-perio-tabla { min-width: max-content; }
+.kd-perio-tabla th, .kd-perio-tabla td { white-space: nowrap; padding: 4px 6px; }
+.kd-perio-rotulo {
+    position: sticky; left: 0;
+    background: var(--kd-esmalte);
+    font-size: .68rem; font-weight: 600; color: #6C7C88;
+    text-align: right; z-index: 1;
+}
+.kd-perio-num { width: 52px; text-align: center; padding: 2px; }
+.kd-perio-fila-pieza td, .kd-perio-fila-pieza th { background: var(--kd-porcelana); }
+.kd-perio-fila-vestibular { background: #FBFDFE; }
+
+/* Toggle de sangrado/placa/supuración: checkbox oculto + cuadrito de color */
+.kd-perio-toggle { display: inline-flex; cursor: pointer; }
+.kd-perio-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.kd-perio-toggle span {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px;
+    border: 1.5px solid var(--kd-mineral);
+    border-radius: 4px;
+    background: #fff;
+    font-size: .58rem; color: transparent;
+    transition: background .1s, border-color .1s;
+}
+.kd-perio-toggle-sangrado input:checked + span { background: var(--kd-lesion); border-color: var(--kd-lesion); }
+.kd-perio-toggle-placa input:checked + span { background: var(--kd-clinico); border-color: var(--kd-clinico); }
+.kd-perio-toggle-supuracion { margin-right: 2px; }
+.kd-perio-toggle-supuracion span { width: 16px; height: 16px; color: #8A97A0; }
+.kd-perio-toggle-supuracion input:checked + span { background: #C9A227; border-color: #C9A227; color: #fff; }
+
+.kd-perio-leyenda { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; }
+.kd-perio-punto { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+.kd-punto-sangrado { background: var(--kd-lesion); }
+.kd-punto-placa { background: var(--kd-clinico); }
+.kd-punto-sano { background: #fff; border: 1.5px solid var(--kd-mineral); }
+
+.kd-perio-svg { display: block; }
+.kd-perio-svg-fdi { font: 9px "IBM Plex Mono", monospace; fill: #7A8A95; }
+.kd-perio-svg-num { font: 8px "IBM Plex Mono", monospace; fill: #5C6D79; }
+
 /* Calendario mensual de citas */
 .kd-calendario td { width: 14.28%; height: 108px; vertical-align: top; padding: 6px; }
 .kd-calendario .kd-dia-fuera { background: #FAFBFC; color: #B7C2C9; }

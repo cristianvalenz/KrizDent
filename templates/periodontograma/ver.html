@@ -1,6 +1,26 @@
 {% extends 'base.html' %}
 {% block titulo %}Periodontograma · {{ paciente.nombre }}{% endblock %}
 
+{% macro grafico(g, titulo) %}
+<div class="kd-eyebrow mb-1">{{ titulo }}</div>
+<div class="kd-perio-scroll mb-4">
+  <svg viewBox="0 0 {{ g.ancho }} {{ g.alto }}" width="{{ g.ancho }}" height="{{ g.alto }}" class="kd-perio-svg">
+    <line x1="0" y1="{{ g.medio_y }}" x2="{{ g.ancho }}" y2="{{ g.medio_y }}" stroke="#D8E2E7" stroke-width="1"/>
+    <polyline points="{{ g.polilinea_v }}" fill="none" stroke="#A9BAC4" stroke-width="1.3"/>
+    <polyline points="{{ g.polilinea_p }}" fill="none" stroke="#A9BAC4" stroke-width="1.3"/>
+    {% for pt in g.puntos %}
+      <line x1="{{ pt.x }}" y1="{{ g.medio_y }}" x2="{{ pt.x }}" y2="{{ pt.yv }}" stroke="{{ pt.colorv }}" stroke-width="1"/>
+      <circle cx="{{ pt.x }}" cy="{{ pt.yv }}" r="4" fill="{{ pt.colorv }}"/>
+      <line x1="{{ pt.x }}" y1="{{ g.medio_y }}" x2="{{ pt.x }}" y2="{{ pt.yp }}" stroke="{{ pt.colorp }}" stroke-width="1"/>
+      <circle cx="{{ pt.x }}" cy="{{ pt.yp }}" r="4" fill="{{ pt.colorp }}"/>
+      <text x="{{ pt.x }}" y="{{ g.medio_y - 52 }}" text-anchor="middle" class="kd-perio-svg-num">{{ pt.sondajev if pt.sondajev is not none else '' }}</text>
+      <text x="{{ pt.x }}" y="{{ g.medio_y + 62 }}" text-anchor="middle" class="kd-perio-svg-num">{{ pt.sondajep if pt.sondajep is not none else '' }}</text>
+      <text x="{{ pt.x }}" y="{{ g.alto - 4 }}" text-anchor="middle" class="kd-perio-svg-fdi">{{ pt.fdi }}</text>
+    {% endfor %}
+  </svg>
+</div>
+{% endmacro %}
+
 {% block contenido %}
 <div class="kd-encabezado">
   <div>
@@ -32,25 +52,18 @@
 </div>
 
 <div class="card">
-  <div class="card-header">Detalle por pieza</div>
-  <div class="table-responsive">
-    <table class="table table-sm align-middle mb-0">
-      <thead><tr><th>Pieza</th><th>Placa</th><th>Sangrado</th><th>Supuración</th><th>Sondaje</th></tr></thead>
-      <tbody>
-        {% for pieza in fila_superior + fila_inferior %}
-          {% set d = p.datos.get(pieza | string) %}
-          {% if d %}
-            <tr>
-              <td class="dato small">{{ pieza }}</td>
-              <td>{{ '✓' if d.placa else '—' }}</td>
-              <td>{{ '✓' if d.sangrado else '—' }}</td>
-              <td>{{ '✓' if d.supuracion else '—' }}</td>
-              <td class="dato">{{ d.sondaje if d.sondaje is not none else '—' }} mm</td>
-            </tr>
-          {% endif %}
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="card-header">
+    Carta periodontal
+    <span class="text-muted fw-normal small ms-2">
+      <span class="kd-perio-punto kd-punto-sangrado"></span> Sangrado
+      <span class="kd-perio-punto kd-punto-placa ms-2"></span> Placa
+      <span class="kd-perio-punto kd-punto-sano ms-2"></span> Sano
+      — arriba vestibular, abajo palatina/lingual, número = mm de sondaje.
+    </span>
+  </div>
+  <div class="card-body">
+    {{ grafico(grafico_superior, 'Arcada superior') }}
+    {{ grafico(grafico_inferior, 'Arcada inferior') }}
   </div>
 </div>
 

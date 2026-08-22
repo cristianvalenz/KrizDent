@@ -1,39 +1,125 @@
 {% extends 'base.html' %}
 {% block titulo %}Nuevo periodontograma · {{ paciente.nombre }}{% endblock %}
 
+{% macro tabla_arcada(piezas, titulo) %}
+<div class="kd-perio-scroll mb-4">
+  <table class="table table-sm kd-perio-tabla mb-0">
+    <thead>
+      <tr>
+        <th class="kd-perio-rotulo">{{ titulo }}</th>
+        {% for p in piezas %}<th class="text-center dato">{{ p }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="kd-perio-fila-vestibular">
+        <th class="kd-perio-rotulo">Sondaje V (mm)</th>
+        {% for p in piezas %}
+          <td><input class="form-control form-control-sm dato kd-perio-num" type="number" min="0" max="15" name="sondaje_{{ p }}_vestibular"></td>
+        {% endfor %}
+      </tr>
+      <tr class="kd-perio-fila-vestibular">
+        <th class="kd-perio-rotulo">Margen V (mm)</th>
+        {% for p in piezas %}
+          <td><input class="form-control form-control-sm dato kd-perio-num" type="number" min="-5" max="10" name="margen_{{ p }}_vestibular"></td>
+        {% endfor %}
+      </tr>
+      <tr class="kd-perio-fila-vestibular">
+        <th class="kd-perio-rotulo">Sangrado V</th>
+        {% for p in piezas %}
+          <td class="text-center">
+            <label class="kd-perio-toggle kd-perio-toggle-sangrado">
+              <input type="checkbox" name="sangrado_{{ p }}_vestibular"><span></span>
+            </label>
+          </td>
+        {% endfor %}
+      </tr>
+      <tr class="kd-perio-fila-vestibular">
+        <th class="kd-perio-rotulo">Placa V</th>
+        {% for p in piezas %}
+          <td class="text-center">
+            <label class="kd-perio-toggle kd-perio-toggle-placa">
+              <input type="checkbox" name="placa_{{ p }}_vestibular"><span></span>
+            </label>
+          </td>
+        {% endfor %}
+      </tr>
+
+      <tr class="kd-perio-fila-pieza">
+        <th class="kd-perio-rotulo">Pieza</th>
+        {% for p in piezas %}<td class="text-center dato fw-bold">{{ p }}</td>{% endfor %}
+      </tr>
+
+      <tr class="kd-perio-fila-palatina">
+        <th class="kd-perio-rotulo">Placa P/L</th>
+        {% for p in piezas %}
+          <td class="text-center">
+            <label class="kd-perio-toggle kd-perio-toggle-placa">
+              <input type="checkbox" name="placa_{{ p }}_palatina"><span></span>
+            </label>
+          </td>
+        {% endfor %}
+      </tr>
+      <tr class="kd-perio-fila-palatina">
+        <th class="kd-perio-rotulo">Sangrado P/L</th>
+        {% for p in piezas %}
+          <td class="text-center">
+            <label class="kd-perio-toggle kd-perio-toggle-sangrado">
+              <input type="checkbox" name="sangrado_{{ p }}_palatina"><span></span>
+            </label>
+          </td>
+        {% endfor %}
+      </tr>
+      <tr class="kd-perio-fila-palatina">
+        <th class="kd-perio-rotulo">Margen P/L (mm)</th>
+        {% for p in piezas %}
+          <td><input class="form-control form-control-sm dato kd-perio-num" type="number" min="-5" max="10" name="margen_{{ p }}_palatina"></td>
+        {% endfor %}
+      </tr>
+      <tr class="kd-perio-fila-palatina">
+        <th class="kd-perio-rotulo">Sondaje P/L (mm)</th>
+        {% for p in piezas %}
+          <td><input class="form-control form-control-sm dato kd-perio-num" type="number" min="0" max="15" name="sondaje_{{ p }}_palatina"></td>
+        {% endfor %}
+      </tr>
+      <tr>
+        <th class="kd-perio-rotulo">Supuración</th>
+        {% for p in piezas %}
+          <td class="text-center">
+            <label class="kd-perio-toggle kd-perio-toggle-supuracion" title="Vestibular">
+              <input type="checkbox" name="supuracion_{{ p }}_vestibular"><span>V</span>
+            </label>
+            <label class="kd-perio-toggle kd-perio-toggle-supuracion" title="Palatina/Lingual">
+              <input type="checkbox" name="supuracion_{{ p }}_palatina"><span>P</span>
+            </label>
+          </td>
+        {% endfor %}
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
 {% block contenido %}
 <div class="kd-encabezado">
   <div>
     <p class="kd-eyebrow">Periodontograma</p>
     <h1>{{ paciente.nombre }}</h1>
-    <p class="subtitulo">Marca placa, sangrado y supuración por pieza; los índices %IP y %SAS se calculan solos.</p>
+    <p class="subtitulo">
+      <span class="kd-perio-leyenda"><span class="kd-perio-punto kd-punto-sangrado"></span> Sangrado</span>
+      <span class="kd-perio-leyenda"><span class="kd-perio-punto kd-punto-placa"></span> Placa</span>
+      — %IP y %SAS se calculan solos al guardar.
+    </p>
   </div>
   <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('pacientes.detalle', paciente_id=paciente.id) }}">Cancelar</a>
 </div>
 
 <form method="post" class="card">
   <div class="card-body">
-    <div class="table-responsive mb-3">
-      <table class="table table-sm align-middle">
-        <thead>
-          <tr>
-            <th>Pieza</th><th class="text-center">Placa</th><th class="text-center">Sangrado</th>
-            <th class="text-center">Supuración</th><th>Sondaje (mm)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for p in fila_superior + fila_inferior %}
-            <tr>
-              <td class="dato small">{{ p }}</td>
-              <td class="text-center"><input type="checkbox" name="placa_{{ p }}"></td>
-              <td class="text-center"><input type="checkbox" name="sangrado_{{ p }}"></td>
-              <td class="text-center"><input type="checkbox" name="supuracion_{{ p }}"></td>
-              <td><input class="form-control form-control-sm dato" type="number" min="0" max="15" name="sondaje_{{ p }}" style="max-width:80px"></td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <h6 class="kd-eyebrow mb-2">Arcada superior</h6>
+    {{ tabla_arcada(fila_superior, 'Superior') }}
+    <h6 class="kd-eyebrow mb-2">Arcada inferior</h6>
+    {{ tabla_arcada(fila_inferior, 'Inferior') }}
+
     <label class="form-label" for="notas">Notas</label>
     <textarea class="form-control" id="notas" name="notas" rows="2"></textarea>
   </div>
