@@ -13,9 +13,15 @@ import uuid
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
+from services.auth import datos_clinica, dele, ins, sel
 from services.constantes import CONSENTIMIENTO_TEXTO_BASE
 from services.storage import ErrorSubida, subir_bytes
-from services.supabase_client import sb
+
+
+def _texto_base() -> str:
+    """El consentimiento lo firma el paciente con la clínica que lo atiende."""
+    return CONSENTIMIENTO_TEXTO_BASE.format(clinica=datos_clinica()["nombre"])
+
 
 bp = Blueprint("consentimientos", __name__, url_prefix="/consentimientos")
 
@@ -32,19 +38,19 @@ def nuevo(paciente_id):
         if not texto:
             flash("Falta el texto del consentimiento.", "danger")
             return render_template("consentimientos/formulario.html", paciente=paciente,
-                                    texto_base=CONSENTIMIENTO_TEXTO_BASE)
+                                    texto_base=_texto_base())
 
         if "," not in firma_datauri:
             flash("Falta la firma. Dibújala en el recuadro antes de guardar.", "danger")
             return render_template("consentimientos/formulario.html", paciente=paciente,
-                                    texto_base=CONSENTIMIENTO_TEXTO_BASE)
+                                    texto_base=_texto_base())
 
         try:
             contenido = base64.b64decode(firma_datauri.split(",", 1)[1])
         except (binascii.Error, IndexError):
             flash("La firma no se pudo leer. Intenta firmar de nuevo.", "danger")
             return render_template("consentimientos/formulario.html", paciente=paciente,
-                                    texto_base=CONSENTIMIENTO_TEXTO_BASE)
+                                    texto_base=_texto_base())
 
         try:
             url = subir_bytes(
@@ -55,9 +61,9 @@ def nuevo(paciente_id):
         except ErrorSubida as e:
             flash(str(e), "danger")
             return render_template("consentimientos/formulario.html", paciente=paciente,
-                                    texto_base=CONSENTIMIENTO_TEXTO_BASE)
+                                    texto_base=_texto_base())
 
-        sb.table("consentimientos").insert({
+        ins("consentimientos", {
             "paciente_id": paciente_id,
             "titulo": titulo,
             "texto": texto,
@@ -68,21 +74,21 @@ def nuevo(paciente_id):
         return redirect(url_for("pacientes.detalle", paciente_id=paciente_id))
 
     return render_template("consentimientos/formulario.html", paciente=paciente,
-                            texto_base=CONSENTIMIENTO_TEXTO_BASE)
+                            texto_base=_texto_base())
 
 
 @bp.route("/<int:consentimiento_id>/eliminar", methods=["POST"])
 def eliminar(consentimiento_id):
-    fila = sb.table("consentimientos").select("paciente_id").eq("id", consentimiento_id).limit(1).execute().data
+    fila = sel("consentimientos", "paciente_id").eq("id", consentimiento_id).limit(1).execute().data
     if not fila:
         abort(404)
-    sb.table("consentimientos").delete().eq("id", consentimiento_id).execute()
+    dele("consentimientos").eq("id", consentimiento_id).execute()
     flash("Consentimiento eliminado.", "info")
     return redirect(url_for("pacientes.detalle", paciente_id=fila[0]["paciente_id"]))
 
 
 def _obtener_paciente(paciente_id: int) -> dict:
-    resp = sb.table("pacientes").select("*").eq("id", paciente_id).limit(1).execute()
+    resp = sel("pacientes", "*").eq("id", paciente_id).limit(1).execute()
     if not resp.data:
         abort(404)
     return resp.data[0]

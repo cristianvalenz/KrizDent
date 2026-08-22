@@ -9,7 +9,8 @@ from services.constantes import (ARCADAS, CARAS_PIEZA, ESTADOS_CARA,
                                   METODOS_PAGO, TIPOS_MORDIDA, TIPOS_ORTODONCIA,
                                   TIPOS_PACIENTE)
 from services.historial_pdf import generar_historial_pdf
-from services.supabase_client import sb
+from services.auth import ins, sel, upd
+
 
 bp = Blueprint("pacientes", __name__, url_prefix="/pacientes")
 
@@ -46,7 +47,7 @@ def lista():
     q = (request.args.get("q") or "").strip()
     incluir_inactivos = request.args.get("inactivos") == "1"
 
-    consulta = sb.table("pacientes").select("*")
+    consulta = sel("pacientes", "*")
     if not incluir_inactivos:
         consulta = consulta.eq("activo", True)
     if q:
@@ -72,7 +73,7 @@ def nuevo():
             return render_template("pacientes/formulario.html", paciente=datos, modo="nuevo",
                                     tipos_paciente=TIPOS_PACIENTE)
 
-        creado = sb.table("pacientes").insert(datos).execute().data[0]
+        creado = ins("pacientes", datos).execute().data[0]
         flash(f"Paciente {creado['nombre']} registrado.", "success")
         return redirect(url_for("pacientes.detalle", paciente_id=creado["id"]))
 
@@ -91,7 +92,7 @@ def editar(paciente_id):
             return render_template("pacientes/formulario.html", paciente=paciente, modo="editar",
                                     tipos_paciente=TIPOS_PACIENTE)
 
-        sb.table("pacientes").update(datos).eq("id", paciente_id).execute()
+        upd("pacientes", datos).eq("id", paciente_id).execute()
         flash("Datos del paciente actualizados.", "success")
         return redirect(url_for("pacientes.detalle", paciente_id=paciente_id))
 
@@ -106,14 +107,14 @@ def baja(paciente_id):
     Un historial clínico no se borra; se archiva.
     """
     paciente = _obtener_paciente(paciente_id)
-    sb.table("pacientes").update({"activo": False}).eq("id", paciente_id).execute()
+    upd("pacientes", {"activo": False}).eq("id", paciente_id).execute()
     flash(f"{paciente['nombre']} pasó a inactivos. Su historial sigue disponible.", "info")
     return redirect(url_for("pacientes.lista"))
 
 
 @bp.route("/<int:paciente_id>/reactivar", methods=["POST"])
 def reactivar(paciente_id):
-    sb.table("pacientes").update({"activo": True}).eq("id", paciente_id).execute()
+    upd("pacientes", {"activo": True}).eq("id", paciente_id).execute()
     flash("Paciente reactivado.", "success")
     return redirect(url_for("pacientes.detalle", paciente_id=paciente_id))
 
@@ -127,7 +128,7 @@ def guardar_mordida(paciente_id):
     if mordida is not None and mordida not in TIPOS_MORDIDA:
         return jsonify({"ok": False, "error": f"Tipo de mordida «{mordida}» no reconocido."}), 400
 
-    sb.table("pacientes").update({"mordida": mordida}).eq("id", paciente_id).execute()
+    upd("pacientes", {"mordida": mordida}).eq("id", paciente_id).execute()
     return jsonify({"ok": True, "mordida": mordida})
 
 
@@ -137,19 +138,19 @@ def detalle(paciente_id):
     paciente = _obtener_paciente(paciente_id)
 
     citas = (
-        sb.table("citas").select("*").eq("paciente_id", paciente_id)
+        sel("citas", "*").eq("paciente_id", paciente_id)
         .order("fecha_hora", desc=True).execute().data or []
     )
 
     entradas = (
-        sb.table("historial").select("*, historial_imagenes(*)")
+        sel("historial", "*, historial_imagenes(*)")
         .eq("paciente_id", paciente_id)
         .order("fecha", desc=True).order("id", desc=True)
         .execute().data or []
     )
 
     recetas = (
-        sb.table("recetas").select("*").eq("paciente_id", paciente_id)
+        sel("recetas", "*").eq("paciente_id", paciente_id)
         .order("fecha", desc=True).order("id", desc=True)
         .execute().data or []
     )
@@ -157,7 +158,7 @@ def detalle(paciente_id):
     # El odontograma se envía como diccionario {pieza: {estado, perno}} para
     # que el JavaScript pinte el diagrama sin tener que recorrer una lista.
     filas = (
-        sb.table("odontograma").select("pieza, estado, con_perno")
+        sel("odontograma", "pieza, estado, con_perno")
         .eq("paciente_id", paciente_id).execute().data or []
     )
     odontograma = {
@@ -166,7 +167,7 @@ def detalle(paciente_id):
 
     # Caras marcadas (caries/obturado por mesial, distal, oclusal, etc.)
     filas_caras = (
-        sb.table("odontograma_caras").select("pieza, cara, estado")
+        sel("odontograma_caras", "pieza, cara, estado")
         .eq("paciente_id", paciente_id).execute().data or []
     )
     odontograma_caras: dict = {}
@@ -174,17 +175,17 @@ def detalle(paciente_id):
         odontograma_caras.setdefault(str(f["pieza"]), {})[f["cara"]] = f["estado"]
 
     ortodoncia = (
-        sb.table("ortodoncia_aparatos").select("*")
+        sel("ortodoncia_aparatos", "*")
         .eq("paciente_id", paciente_id).order("id").execute().data or []
     )
 
     # --- Presupuesto y pagos --------------------------------------------
     tratamientos = (
-        sb.table("tratamientos").select("*").eq("paciente_id", paciente_id)
+        sel("tratamientos", "*").eq("paciente_id", paciente_id)
         .order("fecha", desc=True).execute().data or []
     )
     pagos = (
-        sb.table("pagos").select("*").eq("paciente_id", paciente_id)
+        sel("pagos", "*").eq("paciente_id", paciente_id)
         .order("fecha", desc=True).execute().data or []
     )
     total_presupuestado = sum(float(t["costo"]) for t in tratamientos if t["estado"] != "cancelado")
@@ -192,29 +193,29 @@ def detalle(paciente_id):
     saldo_pendiente = round(total_presupuestado - total_pagado, 2)
 
     consentimientos = (
-        sb.table("consentimientos").select("*").eq("paciente_id", paciente_id)
+        sel("consentimientos", "*").eq("paciente_id", paciente_id)
         .order("firmado_en", desc=True).execute().data or []
     )
     laboratorio = (
-        sb.table("trabajos_laboratorio").select("*").eq("paciente_id", paciente_id)
+        sel("trabajos_laboratorio", "*").eq("paciente_id", paciente_id)
         .order("fecha_envio", desc=True).execute().data or []
     )
 
     profesionales = (
-        sb.table("profesionales").select("id, nombre").eq("activo", True)
+        sel("profesionales", "id, nombre").eq("activo", True)
         .order("nombre").execute().data or []
     )
 
     # --- Versiones del odontograma (Inicial / Alta — "Evolución" es lo vivo) --
     versiones = (
-        sb.table("odontograma_versiones").select("tipo, fecha")
+        sel("odontograma_versiones", "tipo, fecha")
         .eq("paciente_id", paciente_id).execute().data or []
     )
     version_inicial = next((v for v in versiones if v["tipo"] == "inicial"), None)
     version_alta = next((v for v in versiones if v["tipo"] == "alta"), None)
 
     periodontogramas = (
-        sb.table("periodontogramas").select("*").eq("paciente_id", paciente_id)
+        sel("periodontogramas", "*").eq("paciente_id", paciente_id)
         .order("fecha", desc=True).execute().data or []
     )
 
@@ -276,21 +277,21 @@ def historial_pdf(paciente_id):
     el odontograma actual arriba, y las entradas del historial abajo."""
     paciente = _obtener_paciente(paciente_id)
     entradas = (
-        sb.table("historial").select("*, historial_imagenes(*)")
+        sel("historial", "*, historial_imagenes(*)")
         .eq("paciente_id", paciente_id)
         .order("fecha", desc=True).order("id", desc=True)
         .execute().data or []
     )
 
     filas = (
-        sb.table("odontograma").select("pieza, estado, con_perno")
+        sel("odontograma", "pieza, estado, con_perno")
         .eq("paciente_id", paciente_id).execute().data or []
     )
     odontograma = {
         str(f["pieza"]): {"estado": f["estado"], "perno": f["con_perno"]} for f in filas
     }
     filas_caras = (
-        sb.table("odontograma_caras").select("pieza, cara, estado")
+        sel("odontograma_caras", "pieza, cara, estado")
         .eq("paciente_id", paciente_id).execute().data or []
     )
     odontograma_caras: dict = {}
@@ -309,7 +310,7 @@ def historial_pdf(paciente_id):
 
 def _obtener_paciente(paciente_id: int) -> dict:
     """Trae un paciente o corta con 404. Se reutiliza en varias rutas."""
-    resp = sb.table("pacientes").select("*").eq("id", paciente_id).limit(1).execute()
+    resp = sel("pacientes", "*").eq("id", paciente_id).limit(1).execute()
     if not resp.data:
         abort(404)
     return resp.data[0]

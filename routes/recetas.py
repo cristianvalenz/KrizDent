@@ -3,7 +3,8 @@
 from flask import Blueprint, Response, abort, jsonify, render_template, request, url_for
 
 from services.receta_pdf import generar_receta_pdf
-from services.supabase_client import sb
+from services.auth import ins, sel
+
 
 bp = Blueprint("recetas", __name__, url_prefix="/recetas")
 
@@ -14,8 +15,7 @@ def lista():
     q = (request.args.get("q") or "").strip()
 
     consulta = (
-        sb.table("recetas")
-        .select("*, pacientes(id, nombre, documento, telefono)")
+        sel("recetas", "*, pacientes(id, nombre, documento, telefono)")
         .order("creado_en", desc=True)
     )
     recetas = consulta.execute().data or []
@@ -47,7 +47,7 @@ def nueva(paciente_id):
         if not contenido:
             return jsonify({"ok": False, "error": "La receta necesita al menos una indicación."}), 400
 
-        creada = sb.table("recetas").insert({
+        creada = ins("recetas", {
             "paciente_id": paciente_id,
             "contenido": contenido,
             "odontologo_nombre": (request.form.get("odontologo_nombre") or "").strip() or None,
@@ -79,14 +79,14 @@ def descargar(receta_id):
 
 
 def _obtener_paciente(paciente_id: int) -> dict:
-    resp = sb.table("pacientes").select("*").eq("id", paciente_id).limit(1).execute()
+    resp = sel("pacientes", "*").eq("id", paciente_id).limit(1).execute()
     if not resp.data:
         abort(404)
     return resp.data[0]
 
 
 def _obtener_receta(receta_id: int) -> dict:
-    resp = sb.table("recetas").select("*").eq("id", receta_id).limit(1).execute()
+    resp = sel("recetas", "*").eq("id", receta_id).limit(1).execute()
     if not resp.data:
         abort(404)
     return resp.data[0]

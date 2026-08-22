@@ -17,7 +17,8 @@ from flask import Blueprint, abort, jsonify, request
 from services.constantes import (ARCADAS, CARAS_PIEZA, ESTADOS_CARA,
                                   ESTADOS_ORTODONCIA, ESTADOS_PIEZA,
                                   TIPOS_ORTODONCIA)
-from services.supabase_client import sb
+from services.auth import dele, ins, sel, ups
+
 
 bp = Blueprint("odontograma", __name__, url_prefix="/odontograma")
 
@@ -34,7 +35,7 @@ PIEZAS_VALIDAS = {
 def obtener(paciente_id):
     """Devuelve {"11": {"estado": "caries", "perno": false}, ...} para pintar el diagrama."""
     filas = (
-        sb.table("odontograma").select("pieza, estado, con_perno")
+        sel("odontograma", "pieza, estado, con_perno")
         .eq("paciente_id", paciente_id).execute().data or []
     )
     return jsonify({
@@ -64,7 +65,7 @@ def guardar(paciente_id):
     if estado not in ESTADOS_PIEZA:
         return jsonify({"ok": False, "error": f"El estado «{estado}» no está permitido."}), 400
 
-    sb.table("odontograma").upsert(
+    ups("odontograma", 
         {"paciente_id": paciente_id, "pieza": pieza, "estado": estado},
         on_conflict="paciente_id,pieza",
     ).execute()
@@ -93,12 +94,12 @@ def guardar_perno(paciente_id):
     perno = bool(datos.get("perno"))
 
     existente = (
-        sb.table("odontograma").select("estado").eq("paciente_id", paciente_id)
+        sel("odontograma", "estado").eq("paciente_id", paciente_id)
         .eq("pieza", pieza).limit(1).execute().data
     )
     estado_actual = existente[0]["estado"] if existente else "sano"
 
-    sb.table("odontograma").upsert(
+    ups("odontograma", 
         {"paciente_id": paciente_id, "pieza": pieza, "estado": estado_actual, "con_perno": perno},
         on_conflict="paciente_id,pieza",
     ).execute()
@@ -110,7 +111,7 @@ def guardar_perno(paciente_id):
 def obtener_caras(paciente_id):
     """Devuelve {"36": {"oclusal": "caries", "mesial": "obturado"}, ...}."""
     filas = (
-        sb.table("odontograma_caras").select("pieza, cara, estado")
+        sel("odontograma_caras", "pieza, cara, estado")
         .eq("paciente_id", paciente_id).execute().data or []
     )
     resultado: dict = {}
@@ -141,7 +142,7 @@ def guardar_cara(paciente_id):
     if estado not in ESTADOS_CARA:
         return jsonify({"ok": False, "error": f"El estado «{estado}» no está permitido en una cara."}), 400
 
-    sb.table("odontograma_caras").upsert(
+    ups("odontograma_caras", 
         {"paciente_id": paciente_id, "pieza": pieza, "cara": cara, "estado": estado},
         on_conflict="paciente_id,pieza,cara",
     ).execute()
@@ -152,8 +153,8 @@ def guardar_cara(paciente_id):
 @bp.route("/<int:paciente_id>/reiniciar", methods=["POST"])
 def reiniciar(paciente_id):
     """Deja todas las piezas y caras en 'sano' borrando los registros del paciente."""
-    sb.table("odontograma").delete().eq("paciente_id", paciente_id).execute()
-    sb.table("odontograma_caras").delete().eq("paciente_id", paciente_id).execute()
+    dele("odontograma").eq("paciente_id", paciente_id).execute()
+    dele("odontograma_caras").eq("paciente_id", paciente_id).execute()
     return jsonify({"ok": True})
 
 
@@ -162,7 +163,7 @@ def obtener_ortodoncia(paciente_id):
     """Lista los aparatos de ortodoncia del paciente (normalmente 0 o 1, pero
     nada impide tener uno fijo arriba y uno removible abajo a la vez)."""
     filas = (
-        sb.table("ortodoncia_aparatos").select("*")
+        sel("ortodoncia_aparatos", "*")
         .eq("paciente_id", paciente_id).order("id").execute().data or []
     )
     return jsonify(filas)
@@ -202,13 +203,13 @@ def guardar_ortodoncia(paciente_id):
             return jsonify({"ok": False, "error": "Elige la arcada (superior o inferior)."}), 400
         fila["arcada"] = arcada
 
-    creado = sb.table("ortodoncia_aparatos").insert(fila).execute().data[0]
+    creado = ins("ortodoncia_aparatos", fila).execute().data[0]
     return jsonify({"ok": True, "aparato": creado})
 
 
 @bp.route("/ortodoncia/<int:aparato_id>", methods=["DELETE"])
 def eliminar_ortodoncia(aparato_id):
-    sb.table("ortodoncia_aparatos").delete().eq("id", aparato_id).execute()
+    dele("ortodoncia_aparatos").eq("id", aparato_id).execute()
     return jsonify({"ok": True})
 
 
@@ -222,7 +223,7 @@ def obtener_version(paciente_id, tipo):
     if tipo not in ("inicial", "alta"):
         abort(400)
     fila = (
-        sb.table("odontograma_versiones").select("*")
+        sel("odontograma_versiones", "*")
         .eq("paciente_id", paciente_id).eq("tipo", tipo).limit(1).execute().data
     )
     if not fila:
@@ -237,13 +238,13 @@ def guardar_version(paciente_id, tipo):
         abort(400)
 
     filas = (
-        sb.table("odontograma").select("pieza, estado, con_perno")
+        sel("odontograma", "pieza, estado, con_perno")
         .eq("paciente_id", paciente_id).execute().data or []
     )
     odontograma_actual = {str(f["pieza"]): {"estado": f["estado"], "perno": f["con_perno"]} for f in filas}
 
     filas_caras = (
-        sb.table("odontograma_caras").select("pieza, cara, estado")
+        sel("odontograma_caras", "pieza, cara, estado")
         .eq("paciente_id", paciente_id).execute().data or []
     )
     caras_actual: dict = {}
@@ -251,11 +252,11 @@ def guardar_version(paciente_id, tipo):
         caras_actual.setdefault(str(f["pieza"]), {})[f["cara"]] = f["estado"]
 
     ortodoncia_actual = (
-        sb.table("ortodoncia_aparatos").select("*")
+        sel("ortodoncia_aparatos", "*")
         .eq("paciente_id", paciente_id).execute().data or []
     )
 
-    creado = sb.table("odontograma_versiones").upsert({
+    creado = ups("odontograma_versiones", {
         "paciente_id": paciente_id,
         "tipo": tipo,
         "odontograma": odontograma_actual,

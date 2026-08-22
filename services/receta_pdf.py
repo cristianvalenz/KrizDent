@@ -21,7 +21,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
-from services.constantes import CLINICA
+from services.auth import datos_clinica
 from services.filtros import edad as _texto_edad
 
 AZUL = (0x16 / 255, 0x2A / 255, 0x5C / 255)      # navy de la marca
@@ -234,7 +234,7 @@ def _dibujar_bloque(c, x0, y0, w, h, receta, paciente, etiqueta_copia):
     tx = x0 + logo_lado + 8
     c.setFont("Helvetica-Bold", 14)
     c.setFillColorRGB(*AZUL)
-    c.drawString(tx, y - 15, CLINICA["nombre"])
+    c.drawString(tx, y - 15, datos_clinica()["nombre"])
     c.setFont("Helvetica", 6)
     c.setFillColorRGB(*VERDE_OSCURO)
     c.drawString(tx, y - 24, "C O N S U L T O R I O   O D O N T O L Ó G I C O")
@@ -248,13 +248,13 @@ def _dibujar_bloque(c, x0, y0, w, h, receta, paciente, etiqueta_copia):
     _icono_whatsapp(c, icono_cx, y - 8, icono_r)
     c.setFont("Helvetica-Bold", 9.5)
     c.setFillColorRGB(*AZUL)
-    c.drawString(icono_cx + 12, y - 10, CLINICA["celular"])
+    c.drawString(icono_cx + 12, y - 10, datos_clinica()["celular"])
 
     _icono_ubicacion(c, icono_cx + 3, y - 26, 4)
     c.setFont("Helvetica", 6.3)
     c.setFillColorRGB(*AZUL)
-    c.drawString(icono_cx + 12, y - 25, CLINICA["direccion"].split(",")[0])
-    resto_direccion = ",".join(CLINICA["direccion"].split(",")[1:]).strip()
+    c.drawString(icono_cx + 12, y - 25, datos_clinica()["direccion"].split(",")[0])
+    resto_direccion = ",".join(datos_clinica()["direccion"].split(",")[1:]).strip()
     if resto_direccion:
         c.drawString(icono_cx + 12, y - 33, resto_direccion)
 

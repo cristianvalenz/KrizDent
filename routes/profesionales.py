@@ -2,7 +2,8 @@
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from services.supabase_client import sb
+from services.auth import ins, sel, upd
+
 
 bp = Blueprint("profesionales", __name__, url_prefix="/profesionales")
 
@@ -10,7 +11,7 @@ bp = Blueprint("profesionales", __name__, url_prefix="/profesionales")
 @bp.route("/")
 def lista():
     profesionales = (
-        sb.table("profesionales").select("*").order("nombre").execute().data or []
+        sel("profesionales", "*").order("nombre").execute().data or []
     )
     return render_template("profesionales/lista.html", profesionales=profesionales)
 
@@ -22,7 +23,7 @@ def nuevo():
         flash("El profesional necesita un nombre.", "danger")
         return redirect(url_for("profesionales.lista"))
 
-    sb.table("profesionales").insert({"nombre": nombre}).execute()
+    ins("profesionales", {"nombre": nombre}).execute()
     flash(f"«{nombre}» agregado.", "success")
     return redirect(url_for("profesionales.lista"))
 
@@ -30,5 +31,5 @@ def nuevo():
 @bp.route("/<int:profesional_id>/estado", methods=["POST"])
 def cambiar_estado(profesional_id):
     activo = request.form.get("activo") == "1"
-    sb.table("profesionales").update({"activo": activo}).eq("id", profesional_id).execute()
+    upd("profesionales", {"activo": activo}).eq("id", profesional_id).execute()
     return redirect(url_for("profesionales.lista"))

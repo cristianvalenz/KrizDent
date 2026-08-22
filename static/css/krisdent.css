@@ -759,3 +759,100 @@ a:hover { color: var(--kd-clinico-alt); }
         margin-bottom: 14px;
     }
 }
+
+/* =====================================================================
+   ACCESO, CUENTAS Y PERMISOS
+   ===================================================================== */
+/* Pantalla de entrada y avisos de suscripción: sin barra lateral, centrado */
+.kd-acceso {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background: var(--kd-porcelana);
+}
+.kd-acceso-caja { width: 100%; max-width: 380px; }
+.kd-acceso-marca {
+    display: flex; align-items: center; gap: 11px;
+    margin-bottom: 16px; padding-left: 2px;
+}
+.kd-acceso-logo { width: 40px; height: 40px; object-fit: contain; }
+.kd-acceso-marca strong { display: block; font-size: 1.16rem; letter-spacing: -.02em; }
+.kd-acceso-marca small {
+    display: block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .58rem; letter-spacing: .16em; text-transform: uppercase;
+    color: #8A97A0;
+}
+.kd-acceso-pie { margin-top: 14px; font-size: .78rem; color: #8A97A0; text-align: center; }
+.kd-acceso-icono {
+    width: 46px; height: 46px; margin: 0 auto 12px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: #FBEAEA; color: var(--kd-lesion);
+}
+
+/* Ficha del usuario al pie de la barra lateral */
+.kd-sidebar-pie { padding-top: 12px; }
+.kd-cuenta {
+    display: flex; align-items: center; gap: 9px;
+    text-decoration: none; color: #C6D3DA;
+    padding: 6px 4px; border-radius: 8px;
+    transition: background .15s;
+}
+.kd-cuenta:hover { background: rgba(255,255,255,.07); color: #fff; }
+.kd-cuenta-inicial {
+    flex: 0 0 30px; width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: var(--kd-clinico); color: #fff;
+    font-family: "IBM Plex Mono", monospace; font-size: .7rem; font-weight: 600;
+}
+.kd-cuenta-datos { min-width: 0; }
+.kd-cuenta-datos strong {
+    display: block; font-size: .8rem; font-weight: 600; color: #fff;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.kd-cuenta-datos small { display: block; font-size: .68rem; color: #7E93A0; }
+.kd-salir {
+    width: 100%; margin-top: 6px;
+    border: 0; background: none;
+    color: #66798A; font-size: .72rem; text-align: left;
+    padding: 4px 6px; border-radius: 6px;
+}
+.kd-salir:hover { color: #fff; background: rgba(255,255,255,.06); }
+
+/* Casilla con etiqueta, para elegir módulos */
+.kd-modulos-check { display: flex; flex-wrap: wrap; gap: 6px 10px; }
+.kd-modulos-check.compacto { gap: 4px 8px; }
+.kd-check {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: .82rem; cursor: pointer; margin: 0;
+}
+.kd-modulos-check.compacto .kd-check { font-size: .74rem; }
+.kd-check input { accent-color: var(--kd-clinico); width: 15px; height: 15px; }
+/* Módulo que la clínica no contrató: se ve, pero marcarlo no serviría de nada */
+.kd-check.apagado { opacity: .4; }
+
+/* Chip de módulo en «Mi cuenta» */
+.kd-modulo {
+    display: inline-flex; align-items: center;
+    padding: 4px 12px; border-radius: 999px;
+    border: 1.5px solid var(--kd-mineral);
+    background: #fff; color: #8A97A0;
+    font-size: .78rem; font-weight: 500;
+}
+.kd-modulo.activo {
+    border-color: var(--kd-clinico);
+    background: #EAF3F6; color: var(--kd-clinico-alt);
+}
+
+/* Fila de usuario en el panel de administración */
+.kd-usuario-fila {
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
+    padding: 12px; border: 1px solid var(--kd-mineral); border-radius: var(--kd-radio);
+    background: #FCFDFE;
+}
+.kd-usuario-fila .form-label { font-size: .64rem; margin-bottom: 3px; }
+.kd-usuario-acciones { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }

@@ -3,7 +3,8 @@
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from services.constantes import ESTADOS_TRATAMIENTO, METODOS_PAGO
-from services.supabase_client import sb
+from services.auth import dele, ins, sel, upd
+
 
 bp = Blueprint("finanzas", __name__)
 
@@ -19,8 +20,7 @@ def lista():
     profesional_id = request.args.get("profesional_id") or ""
 
     consulta = (
-        sb.table("tratamientos")
-        .select("*, pacientes(id, nombre), profesionales(id, nombre)")
+        sel("tratamientos", "*, pacientes(id, nombre), profesionales(id, nombre)")
     )
     if estado in ESTADOS_TRATAMIENTO:
         consulta = consulta.eq("estado", estado)
@@ -38,7 +38,7 @@ def lista():
     pagos_por_tratamiento = {}
     if ids_tratamiento:
         pagos = (
-            sb.table("pagos").select("tratamiento_id, monto")
+            sel("pagos", "tratamiento_id, monto")
             .in_("tratamiento_id", ids_tratamiento).execute().data or []
         )
         for p in pagos:
@@ -53,7 +53,7 @@ def lista():
     total_cobrado = sum(t["cobrado"] for t in tratamientos)
     total_falta = round(total_presupuestado - total_cobrado, 2)
 
-    profesionales = sb.table("profesionales").select("id, nombre").eq("activo", True).order("nombre").execute().data or []
+    profesionales = sel("profesionales", "id, nombre").eq("activo", True).order("nombre").execute().data or []
 
     return render_template(
         "finanzas/lista.html",
@@ -78,7 +78,7 @@ def nuevo_tratamiento(paciente_id):
     profesional_id = request.form.get("profesional_id") or None
     pieza = request.form.get("pieza") or None
 
-    sb.table("tratamientos").insert({
+    ins("tratamientos", {
         "paciente_id": paciente_id,
         "descripcion": descripcion,
         "costo": costo,
@@ -96,19 +96,19 @@ def cambiar_estado_tratamiento(tratamiento_id):
     nuevo = request.form.get("estado")
     if nuevo not in ESTADOS_TRATAMIENTO:
         abort(400)
-    fila = sb.table("tratamientos").select("paciente_id").eq("id", tratamiento_id).limit(1).execute().data
+    fila = sel("tratamientos", "paciente_id").eq("id", tratamiento_id).limit(1).execute().data
     if not fila:
         abort(404)
-    sb.table("tratamientos").update({"estado": nuevo}).eq("id", tratamiento_id).execute()
+    upd("tratamientos", {"estado": nuevo}).eq("id", tratamiento_id).execute()
     return redirect(url_for("pacientes.detalle", paciente_id=fila[0]["paciente_id"]))
 
 
 @bp.route("/tratamientos/<int:tratamiento_id>/eliminar", methods=["POST"])
 def eliminar_tratamiento(tratamiento_id):
-    fila = sb.table("tratamientos").select("paciente_id").eq("id", tratamiento_id).limit(1).execute().data
+    fila = sel("tratamientos", "paciente_id").eq("id", tratamiento_id).limit(1).execute().data
     if not fila:
         abort(404)
-    sb.table("tratamientos").delete().eq("id", tratamiento_id).execute()
+    dele("tratamientos").eq("id", tratamiento_id).execute()
     flash("Tratamiento eliminado del presupuesto.", "info")
     return redirect(url_for("pacientes.detalle", paciente_id=fila[0]["paciente_id"]))
 
@@ -126,7 +126,7 @@ def nuevo_pago(paciente_id):
 
     tratamiento_id = request.form.get("tratamiento_id") or None
 
-    sb.table("pagos").insert({
+    ins("pagos", {
         "paciente_id": paciente_id,
         "tratamiento_id": int(tratamiento_id) if tratamiento_id else None,
         "monto": monto,
@@ -140,9 +140,9 @@ def nuevo_pago(paciente_id):
 
 @bp.route("/pagos/<int:pago_id>/eliminar", methods=["POST"])
 def eliminar_pago(pago_id):
-    fila = sb.table("pagos").select("paciente_id").eq("id", pago_id).limit(1).execute().data
+    fila = sel("pagos", "paciente_id").eq("id", pago_id).limit(1).execute().data
     if not fila:
         abort(404)
-    sb.table("pagos").delete().eq("id", pago_id).execute()
+    dele("pagos").eq("id", pago_id).execute()
     flash("Pago eliminado.", "info")
     return redirect(url_for("pacientes.detalle", paciente_id=fila[0]["paciente_id"]))

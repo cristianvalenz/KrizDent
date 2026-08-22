@@ -6,6 +6,7 @@ Ejecutar con:  python app.py
 """
 
 import os
+from datetime import timedelta
 
 from dotenv import load_dotenv
 from flask import Flask, render_template
@@ -14,7 +15,9 @@ from flask import Flask, render_template
 # que las necesite (services/supabase_client.py lee SUPABASE_URL al importarse).
 load_dotenv()
 
+from routes.admin import bp as admin_bp                    # noqa: E402
 from routes.almacen import bp as almacen_bp                # noqa: E402
+from routes.auth import bp as auth_bp                      # noqa: E402
 from routes.citas import bp as citas_bp                    # noqa: E402
 from routes.consentimientos import bp as consentimientos_bp  # noqa: E402
 from routes.dashboard import bp as dashboard_bp            # noqa: E402
@@ -27,6 +30,7 @@ from routes.periodontograma import bp as periodontograma_bp  # noqa: E402
 from routes.profesionales import bp as profesionales_bp    # noqa: E402
 from routes.recetas import bp as recetas_bp                # noqa: E402
 from routes.reportes import bp as reportes_bp              # noqa: E402
+from services.auth import registrar_guardia                # noqa: E402
 from services.filtros import registrar_filtros             # noqa: E402
 
 
@@ -38,10 +42,23 @@ def crear_app() -> Flask:
     # Límite de subida: 8 MB por archivo. Una radiografía panorámica JPG pesa ~1-3 MB.
     app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
 
+    # La sesión dura una semana: el consultorio no debería tener que
+    # volver a entrar cada mañana, pero tampoco quedar abierto para siempre.
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    # En producción (Render sirve por HTTPS) la cookie no debe viajar en claro.
+    app.config["SESSION_COOKIE_SECURE"] = os.getenv("FLASK_DEBUG", "0") != "1"
+
     # Filtros Jinja propios: |fecha, |hora, |edad, etc.
     registrar_filtros(app)
+    # Sesión, permisos y aislamiento por clínica. Va antes de los blueprints
+    # para que el before_request cubra todas las rutas que se registren luego.
+    registrar_guardia(app)
 
     # Cada módulo del sistema vive en su propio blueprint.
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(admin_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(pacientes_bp)
     app.register_blueprint(citas_bp)

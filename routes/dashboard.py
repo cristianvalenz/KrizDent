@@ -4,7 +4,8 @@ from datetime import date, datetime, timedelta, timezone
 
 from flask import Blueprint, render_template
 
-from services.supabase_client import sb
+from services.auth import sel
+
 
 bp = Blueprint("dashboard", __name__)
 
@@ -18,13 +19,12 @@ def index():
 
     # count="exact" + limit(0) trae solo el número, no las filas: mucho más rápido.
     total_pacientes = (
-        sb.table("pacientes").select("id", count="exact")
+        sel("pacientes", "id", count="exact")
         .eq("activo", True).limit(0).execute().count or 0
     )
 
     citas_hoy = (
-        sb.table("citas")
-        .select("*, pacientes(id, nombre)")
+        sel("citas", "*, pacientes(id, nombre)")
         .gte("fecha_hora", inicio_hoy.isoformat())
         .lt("fecha_hora", fin_hoy.isoformat())
         .order("fecha_hora")
@@ -32,8 +32,7 @@ def index():
     )
 
     proximas = (
-        sb.table("citas")
-        .select("*, pacientes(id, nombre)")
+        sel("citas", "*, pacientes(id, nombre)")
         .gte("fecha_hora", fin_hoy.isoformat())
         .lt("fecha_hora", fin_semana.isoformat())
         .eq("estado", "pendiente")
@@ -43,21 +42,21 @@ def index():
     )
 
     pendientes_total = (
-        sb.table("citas").select("id", count="exact")
+        sel("citas", "id", count="exact")
         .eq("estado", "pendiente")
         .gte("fecha_hora", inicio_hoy.isoformat())
         .limit(0).execute().count or 0
     )
 
     ultimos_pacientes = (
-        sb.table("pacientes").select("id, nombre, creado_en, telefono")
+        sel("pacientes", "id, nombre, creado_en, telefono")
         .eq("activo", True).order("creado_en", desc=True).limit(5)
         .execute().data or []
     )
 
     # Distribución de piezas con hallazgos, para la barra del panel.
     piezas = (
-        sb.table("odontograma").select("estado").neq("estado", "sano")
+        sel("odontograma", "estado").neq("estado", "sano")
         .execute().data or []
     )
     resumen_piezas = {}
@@ -66,7 +65,7 @@ def index():
 
     # --- Alertas del almacén: stock bajo o por vencer en ≤30 días -----------
     productos = (
-        sb.table("productos_almacen").select("id, nombre, stock_actual, stock_minimo, "
+        sel("productos_almacen", "id, nombre, stock_actual, stock_minimo, "
                                               "unidad_medida, tiene_vencimiento, fecha_vencimiento")
         .eq("activo", True).execute().data or []
     )

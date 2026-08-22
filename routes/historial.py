@@ -3,7 +3,8 @@
 from flask import Blueprint, flash, redirect, request, url_for
 
 from services.storage import ErrorSubida, borrar_imagen, subir_imagen
-from services.supabase_client import sb
+from services.auth import dele, ins, sel, upd
+
 
 bp = Blueprint("historial", __name__, url_prefix="/historial")
 
@@ -21,7 +22,7 @@ def nueva(paciente_id):
         flash("Escribe al menos un diagnóstico o un tratamiento.", "danger")
         return redirect(url_for("pacientes.detalle", paciente_id=paciente_id))
 
-    entrada = sb.table("historial").insert({
+    entrada = ins("historial", {
         "paciente_id": paciente_id,
         "fecha": request.form.get("fecha") or None,
         "diagnostico": diagnostico or None,
@@ -36,7 +37,7 @@ def nueva(paciente_id):
     for archivo in archivos:
         try:
             datos = subir_imagen(archivo, paciente_id)
-            sb.table("historial_imagenes").insert({
+            ins("historial_imagenes", {
                 "historial_id": entrada["id"],
                 "storage_path": datos["storage_path"],
                 "url": datos["url"],
@@ -60,7 +61,7 @@ def nueva(paciente_id):
 def editar(entrada_id):
     paciente_id = int(request.form["paciente_id"])
 
-    sb.table("historial").update({
+    upd("historial", {
         "fecha": request.form.get("fecha") or None,
         "diagnostico": (request.form.get("diagnostico") or "").strip() or None,
         "tratamiento": (request.form.get("tratamiento") or "").strip() or None,
@@ -71,7 +72,7 @@ def editar(entrada_id):
     for archivo in [f for f in request.files.getlist("imagenes") if f and f.filename]:
         try:
             datos = subir_imagen(archivo, paciente_id)
-            sb.table("historial_imagenes").insert({
+            ins("historial_imagenes", {
                 "historial_id": entrada_id,
                 "storage_path": datos["storage_path"],
                 "url": datos["url"],
@@ -91,13 +92,13 @@ def eliminar(entrada_id):
     # Borramos primero los archivos del bucket; el ON DELETE CASCADE
     # se encarga después de las filas de historial_imagenes.
     imagenes = (
-        sb.table("historial_imagenes").select("storage_path")
+        sel("historial_imagenes", "storage_path")
         .eq("historial_id", entrada_id).execute().data or []
     )
     for img in imagenes:
         borrar_imagen(img["storage_path"])
 
-    sb.table("historial").delete().eq("id", entrada_id).execute()
+    dele("historial").eq("id", entrada_id).execute()
     flash("Entrada eliminada del historial.", "info")
     return redirect(url_for("pacientes.detalle", paciente_id=paciente_id))
 
@@ -106,10 +107,10 @@ def eliminar(entrada_id):
 def eliminar_imagen(imagen_id):
     paciente_id = int(request.form["paciente_id"])
 
-    resp = sb.table("historial_imagenes").select("storage_path").eq("id", imagen_id).execute()
+    resp = sel("historial_imagenes", "storage_path").eq("id", imagen_id).execute()
     if resp.data:
         borrar_imagen(resp.data[0]["storage_path"])
 
-    sb.table("historial_imagenes").delete().eq("id", imagen_id).execute()
+    dele("historial_imagenes").eq("id", imagen_id).execute()
     flash("Imagen eliminada.", "info")
     return redirect(url_for("pacientes.detalle", paciente_id=paciente_id))

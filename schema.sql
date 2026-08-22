@@ -1,7 +1,62 @@
 -- =====================================================================
 -- KrizDent — Esquema de base de datos (PostgreSQL / Supabase)
 -- Ejecutar completo en: Supabase → SQL Editor → New query → Run
+--
+-- El sistema es multi-inquilino: se alquila por mensualidad a varias
+-- clínicas y cada una ve SOLO sus datos. Por eso todas las tablas
+-- operativas llevan clinica_id y el backend filtra por él en cada
+-- consulta (ver los ayudantes sel/ins/upd/dele de services/auth.py).
 -- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- 00. CLÍNICAS Y CUENTAS
+-- ---------------------------------------------------------------------
+-- Cada clínica que alquila el sistema es un inquilino aislado.
+create table if not exists clinicas (
+    id          bigserial primary key,
+    nombre      text not null,
+    slug        text not null unique,          -- identificador corto y estable
+    ruc         text,
+    direccion   text,
+    telefono    text,
+    -- Suscripción mensual: se entra solo si está activa y no vencida.
+    activa      boolean not null default true,
+    vence_el    date,                          -- nulo = sin vencimiento
+    -- Módulos contratados. Claves de services/constantes.py → MODULOS.
+    modulos     jsonb not null default '[]',
+    creada_en   timestamptz not null default now()
+);
+
+-- clinica_id nulo = superadministrador (dueño de la plataforma). No
+-- pertenece a ninguna clínica, y por eso nunca ve historias clínicas:
+-- el guardia de services/auth.py solo lo deja entrar a /admin.
+create table if not exists usuarios (
+    id            bigserial primary key,
+    clinica_id    bigint references clinicas(id) on delete cascade,
+    nombre        text not null,
+    email         text not null unique,
+    password_hash text not null,               -- werkzeug.security, nunca en claro
+    rol           text not null default 'usuario'
+                  check (rol in ('superadmin', 'dueno', 'usuario')),
+    -- Subconjunto de los módulos de su clínica; el titular los reparte.
+    modulos       jsonb not null default '[]',
+    activo        boolean not null default true,
+    ultimo_acceso timestamptz,
+    creado_en     timestamptz not null default now()
+);
+create index if not exists idx_usuarios_clinica on usuarios (clinica_id);
+create index if not exists idx_usuarios_email   on usuarios (lower(email));
+
+-- Primera clínica: la del propio consultorio.
+insert into clinicas (nombre, slug, direccion, telefono, activa, modulos)
+values ('KrizDent', 'krizdent', 'Santa Cruz de Cajamarquilla, MZ D lote 5', '900181998', true,
+        '["panel","pacientes","agenda","presupuestos","recetas","almacen","reportes","profesionales"]'::jsonb)
+on conflict (slug) do nothing;
+
+-- El primer superadministrador NO se puede crear desde la web (haría falta
+-- una cuenta para entrar). Se crea desde la terminal:
+--     python crear_usuario.py --superadmin correo@ejemplo.com "Nombre" clave
+--     python crear_usuario.py --clinica krizdent correo@ejemplo.com "Nombre" clave
 
 -- ---------------------------------------------------------------------
 -- 0. PROFESIONALES (odontólogos que se asignan a citas y tratamientos)
@@ -306,17 +361,65 @@ create index if not exists idx_odont_paciente     on odontograma (paciente_id);
 create index if not exists idx_pacientes_nombre   on pacientes (lower(nombre));
 
 -- ---------------------------------------------------------------------
+-- 5b. AISLAMIENTO POR CLÍNICA
+-- ---------------------------------------------------------------------
+-- Toda tabla operativa cuelga de una clínica. Se hace en bloque y no
+-- columna por columna arriba para que el día que se agregue una tabla
+-- nueva baste con sumarla a esta lista y no se pueda olvidar.
+-- La data que ya existía pasa a la primera clínica (KrizDent).
+do $$
+declare
+    t      text;
+    kriz   bigint;
+    tablas text[] := array[
+        'citas','consentimientos','historial','historial_imagenes',
+        'movimientos_almacen','odontograma','odontograma_caras','odontograma_versiones',
+        'ortodoncia_aparatos','pacientes','pagos','periodontogramas','productos_almacen',
+        'profesionales','recetas','trabajos_laboratorio','tratamientos'
+    ];
+begin
+    select id into kriz from clinicas where slug = 'krizdent';
+    if kriz is null then
+        raise exception 'Falta la clínica krizdent: corre antes la sección 00.';
+    end if;
+
+    foreach t in array tablas loop
+        execute format('alter table %I add column if not exists clinica_id bigint', t);
+        execute format('update %I set clinica_id = %L where clinica_id is null', t, kriz);
+        execute format('alter table %I alter column clinica_id set not null', t);
+
+        if not exists (select 1 from pg_constraint where conname = t || '_clinica_fk') then
+            execute format(
+                'alter table %I add constraint %I foreign key (clinica_id) '
+                'references clinicas(id) on delete cascade', t, t || '_clinica_fk');
+        end if;
+
+        execute format('create index if not exists %I on %I (clinica_id)',
+                       'idx_' || t || '_clinica', t);
+    end loop;
+end $$;
+
+-- ---------------------------------------------------------------------
 -- 6. SEGURIDAD (RLS)
 -- ---------------------------------------------------------------------
--- El prototipo se conecta con la clave 'service_role' desde el backend Flask,
--- que ignora RLS. Por eso NO habilitamos RLS todavía: si lo activas sin
--- políticas, la app dejará de leer datos.
+-- El backend Flask se conecta con una sola clave de servicio, así que RLS
+-- está apagado y el aislamiento entre clínicas lo hace la aplicación: los
+-- ayudantes sel/ins/upd/dele de services/auth.py agregan el filtro
+-- clinica_id en cada consulta, y el guardia before_request comprueba
+-- sesión, plan y mensualidad antes de cada petición.
 --
--- Cuando pases a producción con login de usuarios en Supabase Auth, activa:
+-- CONSECUENCIA IMPORTANTE: cualquier consulta que use sb.table() directamente
+-- desde un módulo operativo se salta ese filtro y podría devolver pacientes
+-- de otra clínica. Solo routes/auth.py y routes/admin.py deben usar sb.table()
+-- directo, porque trabajan con 'clinicas' y 'usuarios' (que no llevan filtro).
+--
+-- Defensa en profundidad (recomendado antes de alquilar a terceros): mover la
+-- autenticación a Supabase Auth y activar RLS con el clinica_id en el JWT,
+-- para que el aislamiento lo garantice también la base de datos:
 --   alter table pacientes enable row level security;
---   create policy "personal_autenticado" on pacientes
---     for all to authenticated using (true) with check (true);
--- ...y repite para cada tabla.
+--   create policy "de_mi_clinica" on pacientes for all to authenticated
+--     using (clinica_id = (auth.jwt() -> 'app_metadata' ->> 'clinica_id')::bigint);
+-- ...y repite para cada tabla operativa.
 
 -- ---------------------------------------------------------------------
 -- 7. STORAGE

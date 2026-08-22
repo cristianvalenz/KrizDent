@@ -20,7 +20,8 @@ from reportlab.platypus import (BaseDocTemplate, Frame, HRFlowable,
                                  PageTemplate, Paragraph, Spacer, Table,
                                  TableStyle)
 
-from services.constantes import CLINICA, TIPOS_MORDIDA, TIPOS_PACIENTE
+from services.auth import datos_clinica
+from services.constantes import TIPOS_MORDIDA, TIPOS_PACIENTE
 from services.filtros import edad as _texto_edad
 from services.filtros import fecha as _texto_fecha
 from services.odontograma_pdf import dibujar_odontograma, leyenda_odontograma
@@ -76,15 +77,15 @@ def _encabezado_pie(paciente):
 
         c.setFont("Helvetica-Bold", 13)
         c.setFillColor(AZUL)
-        c.drawString(tx, alto - margen - 8, CLINICA["nombre"])
+        c.drawString(tx, alto - margen - 8, datos_clinica()["nombre"])
         c.setFont("Helvetica", 8)
         c.setFillColor(GRIS)
         c.drawString(tx, alto - margen - 20, "Historial clínico odontológico")
 
         c.setFont("Helvetica", 8)
         c.setFillColor(GRIS)
-        c.drawRightString(ancho - margen, alto - margen - 8, CLINICA["celular"])
-        c.drawRightString(ancho - margen, alto - margen - 20, CLINICA["direccion"])
+        c.drawRightString(ancho - margen, alto - margen - 8, datos_clinica()["celular"])
+        c.drawRightString(ancho - margen, alto - margen - 20, datos_clinica()["direccion"])
 
         c.setStrokeColor(GRIS_CLARO)
         c.setLineWidth(1)

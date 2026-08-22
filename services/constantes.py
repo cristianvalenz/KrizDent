@@ -146,11 +146,13 @@ METODOS_PAGO = {
 # --- Consentimiento informado -----------------------------------------------
 # Texto base editable al momento de firmar. Cumple con mencionar el
 # almacenamiento digital de datos, como recomienda el propio README (Ley 29733).
+# Lleva {clinica} porque cada clínica que alquila el sistema firma con su
+# propio nombre: ver texto_consentimiento() en routes/consentimientos.py.
 CONSENTIMIENTO_TEXTO_BASE = (
     "Declaro que he sido informado(a) de forma clara sobre el diagnóstico, "
     "el tratamiento odontológico propuesto, sus alternativas, riesgos y "
     "beneficios, y que todas mis dudas fueron resueltas antes de firmar. "
-    "Autorizo a KrizDent a realizar el tratamiento descrito y entiendo que "
+    "Autorizo a {clinica} a realizar el tratamiento descrito y entiendo que "
     "mi historial clínico se almacena digitalmente en un servicio en la nube."
 )
 
@@ -160,4 +162,45 @@ ESTADOS_LABORATORIO = {
     "en_proceso": {"etiqueta": "En proceso", "clase": "estado-pendiente"},
     "listo":      {"etiqueta": "Listo para recoger", "clase": "estado-completada"},
     "entregado":  {"etiqueta": "Entregado",  "clase": "estado-completada"},
+}
+
+# --- Cuentas, planes y permisos ---------------------------------------------
+# Los módulos que se pueden contratar/activar. Coinciden con el menú lateral:
+# lo que no está en el plan de la clínica no aparece y su URL queda bloqueada.
+MODULOS = {
+    "panel":         "Panel",
+    "pacientes":     "Pacientes",
+    "agenda":        "Agenda",
+    "presupuestos":  "Presupuestos",
+    "recetas":       "Recetas",
+    "almacen":       "Almacén",
+    "reportes":      "Reportes",
+    "profesionales": "Profesionales",
+}
+
+# Qué módulo gobierna cada blueprint. Los blueprints que viven dentro de la
+# ficha del paciente (odontograma, periodontograma, laboratorio...) dependen
+# del módulo "pacientes": no se contratan por separado.
+MODULO_DE_BLUEPRINT = {
+    "dashboard":       "panel",
+    "pacientes":       "pacientes",
+    "historial":       "pacientes",
+    "odontograma":     "pacientes",
+    "periodontograma": "pacientes",
+    "consentimientos": "pacientes",
+    "laboratorio":     "pacientes",
+    "citas":           "agenda",
+    "finanzas":        "presupuestos",
+    "recetas":         "recetas",
+    "almacen":         "almacen",
+    "reportes":        "reportes",
+    "profesionales":   "profesionales",
+}
+
+# superadmin = dueño de la plataforma (no pertenece a ninguna clínica y nunca
+# ve historias clínicas). dueno = titular de la clínica, administra a los suyos.
+ROLES = {
+    "superadmin": "Superadministrador",
+    "dueno":      "Titular de la clínica",
+    "usuario":    "Usuario",
 }

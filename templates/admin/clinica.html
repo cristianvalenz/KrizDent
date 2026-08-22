@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% block titulo %}{{ clinica.nombre }} · Administración{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">Clínica · <span class="dato">{{ clinica.slug }}</span></p>
+    <h1>{{ clinica.nombre }}</h1>
+  </div>
+  <div class="d-flex gap-2">
+    <form method="post" action="{{ url_for('admin.renovar', clinica_id=clinica.id) }}">
+      <button class="btn btn-primary btn-sm" type="submit">Renovar un mes</button>
+    </form>
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('admin.clinicas') }}">Volver</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- ================= PLAN Y SUSCRIPCIÓN ================= -->
+  <div class="col-lg-6">
+    <form method="post" action="{{ url_for('admin.guardar_clinica', clinica_id=clinica.id) }}" class="card">
+      <div class="card-header">Datos y plan</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label" for="nombre">Nombre</label>
+            <input class="form-control" id="nombre" name="nombre" value="{{ clinica.nombre }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="ruc">RUC</label>
+            <input class="form-control" id="ruc" name="ruc" value="{{ clinica.ruc or '' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="telefono">Teléfono</label>
+            <input class="form-control" id="telefono" name="telefono" value="{{ clinica.telefono or '' }}">
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="direccion">Dirección</label>
+            <input class="form-control" id="direccion" name="direccion" value="{{ clinica.direccion or '' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="vence_el">Paga hasta</label>
+            <input class="form-control" type="date" id="vence_el" name="vence_el" value="{{ clinica.vence_el or '' }}">
+            <div class="form-text">Vacío = sin vencimiento.</div>
+          </div>
+          <div class="col-md-6 d-flex align-items-end">
+            <label class="kd-check mb-2">
+              <input type="checkbox" name="activa" {{ 'checked' if clinica.activa }}>
+              <span>Cuenta activa</span>
+            </label>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Módulos del plan</label>
+            <div class="kd-modulos-check">
+              {% for clave, etiqueta in modulos.items() %}
+                <label class="kd-check">
+                  <input type="checkbox" name="modulos" value="{{ clave }}"
+                         {{ 'checked' if clave in (clinica.modulos or []) }}>
+                  <span>{{ etiqueta }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            <div class="form-text mt-1">
+              Lo que quede fuera del plan desaparece del menú de esta clínica y su URL queda bloqueada.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-header border-top border-bottom-0 text-end">
+        <button class="btn btn-primary btn-sm" type="submit">Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ================= NUEVO USUARIO ================= -->
+  <div class="col-lg-6">
+    <form method="post" action="{{ url_for('admin.nuevo_usuario', clinica_id=clinica.id) }}" class="card">
+      <div class="card-header">Nuevo usuario</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="u-nombre">Nombre</label>
+            <input class="form-control" id="u-nombre" name="nombre" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="u-email">Correo</label>
+            <input class="form-control" type="email" id="u-email" name="email" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="u-rol">Rol</label>
+            <select class="form-select" id="u-rol" name="rol">
+              <option value="dueno">Titular de la clínica</option>
+              <option value="usuario" selected>Usuario</option>
+            </select>
+            <div class="form-text">El titular ve todo el plan y reparte módulos.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="u-clave">Contraseña inicial</label>
+            <input class="form-control" id="u-clave" name="clave" placeholder="{{ clave_defecto }}">
+            <div class="form-text">Vacío = {{ clave_defecto }}. La puede cambiar al entrar.</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Módulos (solo para rol «Usuario»)</label>
+            <div class="kd-modulos-check">
+              {% for clave, etiqueta in modulos.items() %}
+                <label class="kd-check">
+                  <input type="checkbox" name="modulos" value="{{ clave }}"
+                         {{ 'checked' if clave in (clinica.modulos or []) }}>
+                  <span>{{ etiqueta }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-header border-top border-bottom-0 text-end">
+        <button class="btn btn-primary btn-sm" type="submit">Crear usuario</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ================= USUARIOS EXISTENTES ================= -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        Usuarios <span class="text-muted fw-normal small">· {{ usuarios | length }}</span>
+      </div>
+
+      {% if usuarios %}
+        <div class="card-body d-flex flex-column gap-3">
+          {% for u in usuarios %}
+            <div class="kd-usuario-fila">
+              <form method="post" action="{{ url_for('admin.guardar_usuario', usuario_id=u.id) }}"
+                    class="row g-2 align-items-end flex-grow-1">
+                <div class="col-md-3">
+                  <label class="form-label">Nombre</label>
+                  <input class="form-control form-control-sm" name="nombre" value="{{ u.nombre }}" required>
+                  <div class="form-text dato">{{ u.email }}</div>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">Rol</label>
+                  <select class="form-select form-select-sm" name="rol">
+                    <option value="dueno"   {{ 'selected' if u.rol == 'dueno' }}>Titular</option>
+                    <option value="usuario" {{ 'selected' if u.rol == 'usuario' }}>Usuario</option>
+                  </select>
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label">Módulos</label>
+                  <div class="kd-modulos-check compacto">
+                    {% for clave, etiqueta in modulos.items() %}
+                      <label class="kd-check {{ 'apagado' if clave not in (clinica.modulos or []) }}"
+                             title="{{ 'Fuera del plan de la clínica' if clave not in (clinica.modulos or []) else etiqueta }}">
+                        <input type="checkbox" name="modulos" value="{{ clave }}"
+                               {{ 'checked' if clave in (u.modulos or []) }}
+                               {{ 'disabled' if u.rol == 'dueno' }}>
+                        <span>{{ etiqueta }}</span>
+                      </label>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div class="col-md-2 d-flex flex-column gap-1">
+                  <label class="kd-check">
+                    <input type="checkbox" name="activo" {{ 'checked' if u.activo }}>
+                    <span>Activo</span>
+                  </label>
+                  <button class="btn btn-primary btn-sm" type="submit">Guardar</button>
+                </div>
+              </form>
+
+              <div class="kd-usuario-acciones">
+                <form method="post" action="{{ url_for('admin.reiniciar_clave', usuario_id=u.id) }}"
+                      class="d-flex gap-1"
+                      onsubmit="return confirm('Se cambiará la contraseña de {{ u.email }}. ¿Continuar?')">
+                  <input class="form-control form-control-sm" name="clave" placeholder="{{ clave_defecto }}"
+                         style="width:110px" aria-label="Nueva contraseña">
+                  <button class="btn btn-outline-secondary btn-sm text-nowrap" type="submit">Reiniciar clave</button>
+                </form>
+                <form method="post" action="{{ url_for('admin.eliminar_usuario', usuario_id=u.id) }}"
+                      onsubmit="return confirm('Se eliminará la cuenta de {{ u.email }}. ¿Continuar?')">
+                  <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted"
+                          style="font-size:.76rem" type="submit">Eliminar</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="kd-vacio py-4">
+          <strong>Sin usuarios</strong>
+          Esta clínica todavía no puede entrar. Créale su titular arriba.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

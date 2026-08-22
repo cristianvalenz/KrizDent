@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block titulo %}Mi cuenta{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">Mi cuenta</p>
+    <h1>{{ usuario.nombre }}</h1>
+    <p class="subtitulo">
+      <span class="dato">{{ usuario.email }}</span>
+      {% if clinica_sesion %} · {{ clinica_sesion.nombre }}{% endif %}
+    </p>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <form method="post" class="card">
+      <div class="card-header">Mis datos</div>
+      <div class="card-body">
+        <label class="form-label" for="nombre">Nombre</label>
+        <input class="form-control" id="nombre" name="nombre" value="{{ usuario.nombre }}" required>
+        <div class="form-text mt-1">El correo solo lo puede cambiar quien administra tu cuenta.</div>
+      </div>
+      <div class="card-header border-top border-bottom-0 text-end">
+        <input type="hidden" name="accion" value="datos">
+        <button class="btn btn-primary btn-sm" type="submit">Guardar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="col-lg-6">
+    <form method="post" class="card">
+      <div class="card-header">Cambiar contraseña</div>
+      <div class="card-body d-flex flex-column gap-2">
+        <div>
+          <label class="form-label" for="clave_actual">Contraseña actual</label>
+          <input class="form-control" type="password" id="clave_actual" name="clave_actual"
+                 autocomplete="current-password" required>
+        </div>
+        <div>
+          <label class="form-label" for="clave_nueva">Contraseña nueva</label>
+          <input class="form-control" type="password" id="clave_nueva" name="clave_nueva"
+                 autocomplete="new-password" minlength="5" required>
+        </div>
+        <div>
+          <label class="form-label" for="clave_repetir">Repetir la nueva</label>
+          <input class="form-control" type="password" id="clave_repetir" name="clave_repetir"
+                 autocomplete="new-password" minlength="5" required>
+        </div>
+      </div>
+      <div class="card-header border-top border-bottom-0 text-end">
+        <input type="hidden" name="accion" value="clave">
+        <button class="btn btn-primary btn-sm" type="submit">Cambiar contraseña</button>
+      </div>
+    </form>
+  </div>
+
+  {% if not es_superadmin %}
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          Mis módulos
+          <span class="text-muted fw-normal small ms-1">
+            · lo que puedes usar según el plan de tu clínica
+          </span>
+        </div>
+        <div class="card-body d-flex flex-wrap gap-2">
+          {% for clave, etiqueta in modulos.items() %}
+            <span class="kd-modulo {{ 'activo' if clave in modulos_visibles }}">{{ etiqueta }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

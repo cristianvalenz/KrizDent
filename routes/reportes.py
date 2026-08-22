@@ -5,7 +5,8 @@ from datetime import date
 
 from flask import Blueprint, render_template
 
-from services.supabase_client import sb
+from services.auth import sel
+
 
 bp = Blueprint("reportes", __name__, url_prefix="/reportes")
 
@@ -30,7 +31,7 @@ def index():
         return f"{MESES[int(m) - 1]} {y[2:]}"
 
     # --- Ingresos por mes (suma de pagos) -----------------------------------
-    pagos = sb.table("pagos").select("monto, fecha").execute().data or []
+    pagos = sel("pagos", "monto, fecha").execute().data or []
     ingresos_por_mes = defaultdict(float)
     for p in pagos:
         clave = (p["fecha"] or "")[:7]
@@ -39,12 +40,12 @@ def index():
     ingresos = [round(ingresos_por_mes.get(c, 0), 2) for c in claves_mes]
 
     # --- Pacientes nuevos por mes --------------------------------------------
-    pacientes = sb.table("pacientes").select("creado_en").execute().data or []
+    pacientes = sel("pacientes", "creado_en").execute().data or []
     nuevos_por_mes = Counter((p["creado_en"] or "")[:7] for p in pacientes)
     nuevos = [nuevos_por_mes.get(c, 0) for c in claves_mes]
 
     # --- Tratamientos más frecuentes (por descripción, texto libre) ----------
-    tratamientos = sb.table("tratamientos").select("descripcion, costo").execute().data or []
+    tratamientos = sel("tratamientos", "descripcion, costo").execute().data or []
     conteo_tratamientos = Counter(t["descripcion"].strip() for t in tratamientos if t.get("descripcion"))
     top_tratamientos = conteo_tratamientos.most_common(8)
 

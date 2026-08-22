@@ -6,7 +6,8 @@ from flask import (Blueprint, abort, flash, redirect, render_template, request,
                    url_for)
 
 from services.constantes import ESTADOS_CITA
-from services.supabase_client import sb
+from services.auth import dele, ins, sel, upd
+
 
 bp = Blueprint("citas", __name__, url_prefix="/citas")
 
@@ -25,8 +26,7 @@ def lista():
     profesional_id = request.args.get("profesional_id") or ""
 
     consulta = (
-        sb.table("citas")
-        .select("*, pacientes(id, nombre, telefono), profesionales(id, nombre)")
+        sel("citas", "*, pacientes(id, nombre, telefono), profesionales(id, nombre)")
         .gte("fecha_hora", f"{desde}T00:00:00")
         .lte("fecha_hora", f"{hasta}T23:59:59")
     )
@@ -69,7 +69,7 @@ def nueva():
 
         profesional_id = request.form.get("profesional_id")
 
-        sb.table("citas").insert({
+        ins("citas", {
             "paciente_id": int(paciente_id),
             "fecha_hora": fecha_hora,           # '2026-03-14T09:30' del input datetime-local
             "duracion_min": int(request.form.get("duracion_min") or 30),
@@ -98,7 +98,7 @@ def editar(cita_id):
 
     if request.method == "POST":
         profesional_id = request.form.get("profesional_id")
-        sb.table("citas").update({
+        upd("citas", {
             "paciente_id": int(request.form["paciente_id"]),
             "fecha_hora": request.form["fecha_hora"],
             "duracion_min": int(request.form.get("duracion_min") or 30),
@@ -129,14 +129,14 @@ def cambiar_estado(cita_id):
         flash("Ese estado no existe.", "danger")
         return redirect(request.referrer or url_for("citas.lista"))
 
-    sb.table("citas").update({"estado": nuevo}).eq("id", cita_id).execute()
+    upd("citas", {"estado": nuevo}).eq("id", cita_id).execute()
     flash(f"Cita marcada como {ESTADOS_CITA[nuevo]['etiqueta'].lower()}.", "success")
     return redirect(request.referrer or url_for("citas.lista"))
 
 
 @bp.route("/<int:cita_id>/eliminar", methods=["POST"])
 def eliminar(cita_id):
-    sb.table("citas").delete().eq("id", cita_id).execute()
+    dele("citas").eq("id", cita_id).execute()
     flash("Cita eliminada de la agenda.", "info")
     return redirect(request.referrer or url_for("citas.lista"))
 
@@ -148,7 +148,7 @@ def marcar_recordatorio(cita_id):
     enlace wa.me con el mensaje ya escrito (el navegador abre WhatsApp Web
     o la app), y esta llamada solo anota que ya se avisó, para no repetir.
     """
-    sb.table("citas").update({"recordatorio_enviado": True}).eq("id", cita_id).execute()
+    upd("citas", {"recordatorio_enviado": True}).eq("id", cita_id).execute()
     return ("", 204)
 
 
@@ -167,7 +167,7 @@ def calendario():
     profesional_id = request.args.get("profesional_id") or ""
 
     consulta = (
-        sb.table("citas").select("*, pacientes(id, nombre), profesionales(id, nombre)")
+        sel("citas", "*, pacientes(id, nombre), profesionales(id, nombre)")
         .gte("fecha_hora", f"{primer_dia.isoformat()}T00:00:00")
         .lte("fecha_hora", f"{ultimo_dia.isoformat()}T23:59:59")
     )
@@ -219,20 +219,20 @@ def calendario():
 
 def _pacientes_activos():
     return (
-        sb.table("pacientes").select("id, nombre")
+        sel("pacientes", "id, nombre")
         .eq("activo", True).order("nombre").execute().data or []
     )
 
 
 def _profesionales_activos():
     return (
-        sb.table("profesionales").select("id, nombre")
+        sel("profesionales", "id, nombre")
         .eq("activo", True).order("nombre").execute().data or []
     )
 
 
 def _obtener_cita(cita_id: int) -> dict:
-    resp = sb.table("citas").select("*").eq("id", cita_id).limit(1).execute()
+    resp = sel("citas", "*").eq("id", cita_id).limit(1).execute()
     if not resp.data:
         abort(404)
     return resp.data[0]

@@ -13,7 +13,8 @@ propias mediciones. Las curvas de margen gingival (azul) y fondo de bolsa
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
-from services.supabase_client import sb
+from services.auth import dele, ins, sel, upd
+
 
 bp = Blueprint("periodontograma", __name__, url_prefix="/periodontograma")
 
@@ -285,7 +286,7 @@ def nuevo(paciente_id):
     if request.method == "POST":
         datos = _leer_formulario(piezas)
         resumen = _resumen(datos, piezas)
-        creado = sb.table("periodontogramas").insert({
+        creado = ins("periodontogramas", {
             "paciente_id": paciente_id,
             "datos": datos,
             "notas": (request.form.get("notas") or "").strip() or None,
@@ -305,7 +306,7 @@ def nuevo(paciente_id):
 
 @bp.route("/<int:periodontograma_id>", methods=["GET", "POST"])
 def ver(periodontograma_id):
-    fila = sb.table("periodontogramas").select("*").eq("id", periodontograma_id).limit(1).execute().data
+    fila = sel("periodontogramas", "*").eq("id", periodontograma_id).limit(1).execute().data
     if not fila:
         abort(404)
     registro = fila[0]
@@ -316,7 +317,7 @@ def ver(periodontograma_id):
     if request.method == "POST":
         datos = _leer_formulario(piezas)
         resumen = _resumen(datos, piezas)
-        sb.table("periodontogramas").update({
+        upd("periodontogramas", {
             "datos": datos,
             "notas": (request.form.get("notas") or "").strip() or None,
             **resumen,
@@ -334,16 +335,16 @@ def ver(periodontograma_id):
 
 @bp.route("/<int:periodontograma_id>/eliminar", methods=["POST"])
 def eliminar(periodontograma_id):
-    fila = sb.table("periodontogramas").select("paciente_id").eq("id", periodontograma_id).limit(1).execute().data
+    fila = sel("periodontogramas", "paciente_id").eq("id", periodontograma_id).limit(1).execute().data
     if not fila:
         abort(404)
-    sb.table("periodontogramas").delete().eq("id", periodontograma_id).execute()
+    dele("periodontogramas").eq("id", periodontograma_id).execute()
     flash("Periodontograma eliminado.", "info")
     return redirect(url_for("pacientes.detalle", paciente_id=fila[0]["paciente_id"]))
 
 
 def _obtener_paciente(paciente_id: int) -> dict:
-    resp = sb.table("pacientes").select("*").eq("id", paciente_id).limit(1).execute()
+    resp = sel("pacientes", "*").eq("id", paciente_id).limit(1).execute()
     if not resp.data:
         abort(404)
     return resp.data[0]

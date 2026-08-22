@@ -16,7 +16,8 @@ from datetime import date
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from services.constantes import CATEGORIAS_ALMACEN, TIPOS_MOVIMIENTO, UNIDADES_MEDIDA
-from services.supabase_client import sb
+from services.auth import ins, sel, upd
+
 
 bp = Blueprint("almacen", __name__, url_prefix="/almacen")
 
@@ -31,7 +32,7 @@ def lista():
     q = (request.args.get("q") or "").strip()
     categoria = request.args.get("categoria") or ""
 
-    consulta = sb.table("productos_almacen").select("*").eq("activo", True)
+    consulta = sel("productos_almacen", "*").eq("activo", True)
     if categoria in CATEGORIAS_ALMACEN:
         consulta = consulta.eq("categoria", categoria)
     if q:
@@ -69,7 +70,7 @@ def nuevo():
                                     categorias=CATEGORIAS_ALMACEN, unidades=UNIDADES_MEDIDA)
 
         stock_inicial = datos.pop("stock_inicial")
-        creado = sb.table("productos_almacen").insert(datos).execute().data[0]
+        creado = ins("productos_almacen", datos).execute().data[0]
 
         if stock_inicial > 0:
             _registrar_movimiento(creado["id"], "entrada", stock_inicial,
@@ -94,7 +95,7 @@ def editar(producto_id):
             return render_template("almacen/formulario.html", producto=producto, modo="editar",
                                     categorias=CATEGORIAS_ALMACEN, unidades=UNIDADES_MEDIDA)
 
-        sb.table("productos_almacen").update(datos).eq("id", producto_id).execute()
+        upd("productos_almacen", datos).eq("id", producto_id).execute()
         flash("Producto actualizado.", "success")
         return redirect(url_for("almacen.detalle", producto_id=producto_id))
 
@@ -107,7 +108,7 @@ def detalle(producto_id):
     """Ficha del producto: stock actual + kardex completo + total gastado."""
     producto = _obtener_producto(producto_id)
     movimientos = (
-        sb.table("movimientos_almacen").select("*")
+        sel("movimientos_almacen", "*")
         .eq("producto_id", producto_id)
         .order("creado_en", desc=True).execute().data or []
     )
@@ -171,7 +172,7 @@ def salida(producto_id):
 def baja(producto_id):
     """Baja lógica: deja de aparecer en el listado, pero conserva el kardex."""
     producto = _obtener_producto(producto_id)
-    sb.table("productos_almacen").update({"activo": False}).eq("id", producto_id).execute()
+    upd("productos_almacen", {"activo": False}).eq("id", producto_id).execute()
     flash(f"«{producto['nombre']}» se quitó del almacén activo.", "info")
     return redirect(url_for("almacen.lista"))
 
@@ -212,7 +213,7 @@ def _registrar_movimiento(producto_id, tipo, cantidad, motivo, costo_unitario):
     nuevo_stock = stock_previo + cantidad if tipo == "entrada" else stock_previo - cantidad
     nuevo_stock = round(nuevo_stock, 2)
 
-    sb.table("movimientos_almacen").insert({
+    ins("movimientos_almacen", {
         "producto_id": producto_id,
         "tipo": tipo,
         "cantidad": cantidad,
@@ -221,11 +222,11 @@ def _registrar_movimiento(producto_id, tipo, cantidad, motivo, costo_unitario):
         "motivo": motivo,
     }).execute()
 
-    sb.table("productos_almacen").update({"stock_actual": nuevo_stock}).eq("id", producto_id).execute()
+    upd("productos_almacen", {"stock_actual": nuevo_stock}).eq("id", producto_id).execute()
 
 
 def _obtener_producto(producto_id: int) -> dict:
-    resp = sb.table("productos_almacen").select("*").eq("id", producto_id).limit(1).execute()
+    resp = sel("productos_almacen", "*").eq("id", producto_id).limit(1).execute()
     if not resp.data:
         abort(404)
     return resp.data[0]
