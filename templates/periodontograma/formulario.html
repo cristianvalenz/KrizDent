@@ -1,99 +1,61 @@
 {% extends 'base.html' %}
 {% block titulo %}Nuevo periodontograma · {{ paciente.nombre }}{% endblock %}
 
-{% macro tabla_arcada(piezas, titulo) %}
+{% macro fila_num(piezas, cara, punto, etiqueta) %}
+<tr>
+  <th class="kd-perio-rotulo">{{ etiqueta }}</th>
+  {% for p in piezas %}
+    <td><input class="form-control form-control-sm dato kd-perio-num" type="number" min="0" max="15" name="{{ punto }}_{{ p }}_{{ cara }}"></td>
+  {% endfor %}
+</tr>
+{% endmacro %}
+
+{% macro fila_toggle(piezas, cara, campo, clase, etiqueta) %}
+<tr>
+  <th class="kd-perio-rotulo">{{ etiqueta }}</th>
+  {% for p in piezas %}
+    <td class="text-center">
+      <label class="kd-perio-toggle {{ clase }}">
+        <input type="checkbox" name="{{ campo }}_{{ p }}_{{ cara }}"><span></span>
+      </label>
+    </td>
+  {% endfor %}
+</tr>
+{% endmacro %}
+
+{% macro tabla_arcada(piezas, cuadrante_izq, cuadrante_der, etiqueta_arriba, etiqueta_abajo) %}
 <div class="kd-perio-scroll mb-4">
   <table class="table table-sm kd-perio-tabla mb-0">
     <thead>
+      <tr class="kd-perio-cuadrantes">
+        <th class="kd-perio-rotulo"></th>
+        <th class="text-center" colspan="{{ (piezas | length) // 2 }}">Cuadrante {{ cuadrante_izq }}</th>
+        <th class="text-center" colspan="{{ (piezas | length) // 2 }}">Cuadrante {{ cuadrante_der }}</th>
+      </tr>
       <tr>
-        <th class="kd-perio-rotulo">{{ titulo }}</th>
-        {% for p in piezas %}<th class="text-center dato">{{ p }}</th>{% endfor %}
+        <th class="kd-perio-rotulo">Pieza</th>
+        {% for p in piezas %}<th class="text-center dato">{{ p % 10 if p % 10 != 0 else 8 }}</th>{% endfor %}
       </tr>
     </thead>
     <tbody>
-      <tr class="kd-perio-fila-vestibular">
-        <th class="kd-perio-rotulo">Sondaje V (mm)</th>
-        {% for p in piezas %}
-          <td><input class="form-control form-control-sm dato kd-perio-num" type="number" min="0" max="15" name="sondaje_{{ p }}_vestibular"></td>
-        {% endfor %}
-      </tr>
-      <tr class="kd-perio-fila-vestibular">
-        <th class="kd-perio-rotulo">Margen V (mm)</th>
-        {% for p in piezas %}
-          <td><input class="form-control form-control-sm dato kd-perio-num" type="number" min="-5" max="10" name="margen_{{ p }}_vestibular"></td>
-        {% endfor %}
-      </tr>
-      <tr class="kd-perio-fila-vestibular">
-        <th class="kd-perio-rotulo">Sangrado V</th>
-        {% for p in piezas %}
-          <td class="text-center">
-            <label class="kd-perio-toggle kd-perio-toggle-sangrado">
-              <input type="checkbox" name="sangrado_{{ p }}_vestibular"><span></span>
-            </label>
-          </td>
-        {% endfor %}
-      </tr>
-      <tr class="kd-perio-fila-vestibular">
-        <th class="kd-perio-rotulo">Placa V</th>
-        {% for p in piezas %}
-          <td class="text-center">
-            <label class="kd-perio-toggle kd-perio-toggle-placa">
-              <input type="checkbox" name="placa_{{ p }}_vestibular"><span></span>
-            </label>
-          </td>
-        {% endfor %}
-      </tr>
+      {{ fila_num(piezas, 'vestibular', 'ps3', 'PS - 3') }}
+      {{ fila_num(piezas, 'vestibular', 'ps2', 'PS - 2') }}
+      {{ fila_num(piezas, 'vestibular', 'eq', 'E. Q.') }}
+      {{ fila_num(piezas, 'vestibular', 'ead', 'E. Ad.') }}
+      {{ fila_toggle(piezas, 'vestibular', 'sangrado', 'kd-perio-toggle-sangrado', 'Sangrado') }}
+      {{ fila_toggle(piezas, 'vestibular', 'placa', 'kd-perio-toggle-placa', 'Placa') }}
+      {{ fila_num(piezas, 'vestibular', 'ps1', 'PS - 1') }}
 
-      <tr class="kd-perio-fila-pieza">
-        <th class="kd-perio-rotulo">Pieza</th>
-        {% for p in piezas %}<td class="text-center dato fw-bold">{{ p }}</td>{% endfor %}
-      </tr>
+      <tr class="kd-perio-fila-etiqueta"><th class="kd-perio-rotulo" colspan="{{ (piezas | length) + 1 }}">{{ etiqueta_arriba }}</th></tr>
+      <tr class="kd-perio-fila-etiqueta kd-perio-fila-etiqueta-b"><th class="kd-perio-rotulo" colspan="{{ (piezas | length) + 1 }}">{{ etiqueta_abajo }}</th></tr>
 
-      <tr class="kd-perio-fila-palatina">
-        <th class="kd-perio-rotulo">Placa P/L</th>
-        {% for p in piezas %}
-          <td class="text-center">
-            <label class="kd-perio-toggle kd-perio-toggle-placa">
-              <input type="checkbox" name="placa_{{ p }}_palatina"><span></span>
-            </label>
-          </td>
-        {% endfor %}
-      </tr>
-      <tr class="kd-perio-fila-palatina">
-        <th class="kd-perio-rotulo">Sangrado P/L</th>
-        {% for p in piezas %}
-          <td class="text-center">
-            <label class="kd-perio-toggle kd-perio-toggle-sangrado">
-              <input type="checkbox" name="sangrado_{{ p }}_palatina"><span></span>
-            </label>
-          </td>
-        {% endfor %}
-      </tr>
-      <tr class="kd-perio-fila-palatina">
-        <th class="kd-perio-rotulo">Margen P/L (mm)</th>
-        {% for p in piezas %}
-          <td><input class="form-control form-control-sm dato kd-perio-num" type="number" min="-5" max="10" name="margen_{{ p }}_palatina"></td>
-        {% endfor %}
-      </tr>
-      <tr class="kd-perio-fila-palatina">
-        <th class="kd-perio-rotulo">Sondaje P/L (mm)</th>
-        {% for p in piezas %}
-          <td><input class="form-control form-control-sm dato kd-perio-num" type="number" min="0" max="15" name="sondaje_{{ p }}_palatina"></td>
-        {% endfor %}
-      </tr>
-      <tr>
-        <th class="kd-perio-rotulo">Supuración</th>
-        {% for p in piezas %}
-          <td class="text-center">
-            <label class="kd-perio-toggle kd-perio-toggle-supuracion" title="Vestibular">
-              <input type="checkbox" name="supuracion_{{ p }}_vestibular"><span>V</span>
-            </label>
-            <label class="kd-perio-toggle kd-perio-toggle-supuracion" title="Palatina/Lingual">
-              <input type="checkbox" name="supuracion_{{ p }}_palatina"><span>P</span>
-            </label>
-          </td>
-        {% endfor %}
-      </tr>
+      {{ fila_num(piezas, 'palatina', 'ps1', 'PS - 1') }}
+      {{ fila_toggle(piezas, 'palatina', 'placa', 'kd-perio-toggle-placa', 'Placa') }}
+      {{ fila_toggle(piezas, 'palatina', 'sangrado', 'kd-perio-toggle-sangrado', 'Sangrado') }}
+      {{ fila_num(piezas, 'palatina', 'ead', 'E. Ad.') }}
+      {{ fila_num(piezas, 'palatina', 'eq', 'E. Q.') }}
+      {{ fila_num(piezas, 'palatina', 'ps2', 'PS - 2') }}
+      {{ fila_num(piezas, 'palatina', 'ps3', 'PS - 3') }}
     </tbody>
   </table>
 </div>
@@ -107,7 +69,7 @@
     <p class="subtitulo">
       <span class="kd-perio-leyenda"><span class="kd-perio-punto kd-punto-sangrado"></span> Sangrado</span>
       <span class="kd-perio-leyenda"><span class="kd-perio-punto kd-punto-placa"></span> Placa</span>
-      — %IP y %SAS se calculan solos al guardar.
+      — PS = profundidad de sondaje (mm) en 3 puntos · E.Q. = encía queratinizada · E.Ad. = encía adherida.
     </p>
   </div>
   <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('pacientes.detalle', paciente_id=paciente.id) }}">Cancelar</a>
@@ -116,9 +78,9 @@
 <form method="post" class="card">
   <div class="card-body">
     <h6 class="kd-eyebrow mb-2">Arcada superior</h6>
-    {{ tabla_arcada(fila_superior, 'Superior') }}
+    {{ tabla_arcada(fila_superior, 'I', 'II', 'Bucal', 'Palatino') }}
     <h6 class="kd-eyebrow mb-2">Arcada inferior</h6>
-    {{ tabla_arcada(fila_inferior, 'Inferior') }}
+    {{ tabla_arcada(fila_inferior, 'IV', 'III', 'Lingual', 'Bucal') }}
 
     <label class="form-label" for="notas">Notas</label>
     <textarea class="form-control" id="notas" name="notas" rows="2"></textarea>

@@ -498,6 +498,15 @@ a:hover { color: var(--kd-clinico-alt); }
 .kd-perio-svg { display: block; }
 .kd-perio-svg-fdi { font: 9px "IBM Plex Mono", monospace; fill: #7A8A95; }
 .kd-perio-svg-num { font: 8px "IBM Plex Mono", monospace; fill: #5C6D79; }
+.kd-perio-svg-lbl { font: 700 9px "IBM Plex Mono", monospace; fill: #6C7C88; text-transform: uppercase; letter-spacing: .04em; }
+
+.kd-perio-cuadrantes th { background: var(--kd-clinico); color: #fff; font-size: .68rem; text-transform: uppercase; letter-spacing: .04em; }
+.kd-perio-fila-etiqueta th {
+    text-align: left; background: var(--kd-porcelana); color: #6C7C88;
+    font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    padding: 3px 8px;
+}
+.kd-perio-fila-etiqueta-b { border-bottom: 1px solid var(--kd-mineral); }
 
 /* Calendario mensual de citas */
 .kd-calendario td { width: 14.28%; height: 108px; vertical-align: top; padding: 6px; }
