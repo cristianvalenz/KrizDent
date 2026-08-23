@@ -208,9 +208,11 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
 .seccion-tinta .encabezado-seccion p { color: #A5B6C0; }
 
 /* ---------- Héroe ---------- */
-.heroe { padding: 68px 0 76px; }
-.heroe .envoltura { display: grid; gap: 48px; align-items: center; }
-@media (min-width: 980px) { .heroe .envoltura { grid-template-columns: 1.02fr 1fr; gap: 56px; } }
+/* El texto arriba y la carta clínica a lo ancho debajo: en dos columnas el
+   diagrama quedaba a media página y los dientes no se leían. */
+.heroe { padding: 52px 0 60px; }
+.heroe .envoltura { display: grid; gap: 34px; }
+.heroe-texto { max-width: 60ch; }
 
 .heroe h1 {
     font-family: var(--display);
@@ -226,7 +228,7 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
 
 .heroe-datos {
     display: flex; flex-wrap: wrap; gap: 28px;
-    margin-top: 38px; padding-top: 24px;
+    margin-top: 28px; padding-top: 20px;
     border-top: 1px solid var(--linea);
 }
 .heroe-datos div strong {
@@ -298,6 +300,18 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
 .leyenda[aria-hidden="true"] { opacity: 0; pointer-events: none; }
 
 .leyenda i.muestra-linea { height: 3px; border-radius: 0; }
+
+/* En un teléfono, 16 piezas repartidas en 320px son ilegibles. Se deja que la
+   carta conserve un ancho mínimo y se recorra con el dedo, igual que en el
+   sistema; encogerla hasta que quepa no serviría de nada. */
+@media (max-width: 720px) {
+    .marco-cuerpo {
+        overflow-x: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--linea) transparent;
+    }
+    .marco-panel svg { min-width: 520px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
     .marco-panel, .leyenda { transition: none; }
@@ -482,7 +496,7 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
 <!-- ================= HÉROE ================= -->
 <section class="heroe" id="inicio">
   <div class="envoltura">
-    <div>
+    <div class="heroe-texto">
       <p class="rotulo">Software para consultorios odontológicos · Perú</p>
       <h1>Tu consultorio deja el archivador y pasa a <em>una sola pantalla</em>.</h1>
       <p class="bajada">
@@ -518,11 +532,11 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
            mueva nada de sitio; se ocultan con opacidad, no con display. -->
       <div class="marco-cuerpo">
         <div class="marco-panel" id="panel-odonto" role="tabpanel">
-          <svg id="odontograma" viewBox="0 0 640 290" role="img"
+          <svg id="odontograma" viewBox="0 4 640 278" role="img"
                aria-label="Odontograma de 32 piezas con hallazgos marcados por cara"></svg>
         </div>
         <div class="marco-panel" id="panel-perio" role="tabpanel" aria-hidden="true">
-          <svg id="perio-heroe" viewBox="0 0 640 290" role="img"
+          <svg id="perio-heroe" viewBox="0 4 640 278" role="img"
                aria-label="Carta periodontal con profundidad de sondaje por cara"></svg>
         </div>
       </div>
