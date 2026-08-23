@@ -899,3 +899,8 @@ a:hover { color: var(--kd-clinico-alt); }
     font-family: "IBM Plex Mono", monospace;
     font-size: 1.05rem; font-weight: 600; color: var(--kd-clinico);
 }
+
+/* Módulos bloqueados: el titular entra a todo el plan, no hay nada que repartir */
+.kd-modulos-check.bloqueado { opacity: .55; }
+.kd-modulos-check.bloqueado .kd-check { cursor: default; }
+.kd-modulos-aviso { color: var(--kd-clinico); }

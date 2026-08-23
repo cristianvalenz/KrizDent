@@ -153,7 +153,11 @@
             <div class="form-text">Vacío = {{ clave_defecto }}. La puede cambiar al entrar.</div>
           </div>
           <div class="col-12">
-            <label class="form-label">Módulos (solo para rol «Usuario»)</label>
+            <label class="form-label">Módulos a los que entra</label>
+            <p class="form-text kd-modulos-aviso mt-0 mb-1" hidden>
+              El titular entra a todos los módulos del plan de su clínica, así que
+              aquí no hay nada que elegir.
+            </p>
             <div class="kd-modulos-check">
               {% for clave, etiqueta in modulos.items() %}
                 <label class="kd-check">
@@ -282,6 +286,32 @@
             .replace(/[^a-z0-9]+/g, "_")
             .replace(/^_+|_+$/g, "");
         usuario.value = limpio ? (prefijo ? prefijo + "_" + limpio : limpio) : "";
+    });
+})();
+
+// El titular recibe TODO el plan de su clínica, así que repartirle módulos no
+// significa nada: al elegir ese rol se marcan y se bloquean las casillas, para
+// que se vea por qué no hay nada que decidir ahí.
+(function () {
+    "use strict";
+    document.querySelectorAll("select[name='rol']").forEach(function (rol) {
+        var form = rol.closest("form");
+        var grupo = form && form.querySelector(".kd-modulos-check");
+        if (!grupo) return;
+        var aviso = form.querySelector(".kd-modulos-aviso");
+
+        function reflejar() {
+            var esTitular = rol.value === "dueno";
+            grupo.classList.toggle("bloqueado", esTitular);
+            grupo.querySelectorAll("input[type=checkbox]").forEach(function (casilla) {
+                casilla.disabled = esTitular;
+                if (esTitular) casilla.checked = true;
+            });
+            if (aviso) aviso.hidden = !esTitular;
+        }
+
+        rol.addEventListener("change", reflejar);
+        reflejar();
     });
 })();
 </script>
