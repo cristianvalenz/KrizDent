@@ -274,7 +274,7 @@ def detalle(paciente_id):
 @bp.route("/<int:paciente_id>/historial/pdf")
 def historial_pdf(paciente_id):
     """Descarga el historial clínico completo del paciente en una hoja A4:
-    el odontograma actual arriba, y las entradas del historial abajo."""
+    el odontograma y el periodontograma arriba, y las entradas abajo."""
     paciente = _obtener_paciente(paciente_id)
     entradas = (
         sel("historial", "*, historial_imagenes(*)")
@@ -298,7 +298,17 @@ def historial_pdf(paciente_id):
     for f in filas_caras:
         odontograma_caras.setdefault(str(f["pieza"]), {})[f["cara"]] = f["estado"]
 
-    pdf = generar_historial_pdf(paciente, entradas, odontograma, odontograma_caras)
+    # Solo el más reciente: el PDF retrata el estado actual del paciente, no
+    # su histórico periodontal completo.
+    periodontogramas = (
+        sel("periodontogramas", "*")
+        .eq("paciente_id", paciente_id)
+        .order("fecha", desc=True).order("id", desc=True)
+        .limit(1).execute().data or []
+    )
+
+    pdf = generar_historial_pdf(paciente, entradas, odontograma, odontograma_caras,
+                                periodontogramas[0] if periodontogramas else None)
     nombre_archivo = f"historial_{paciente['nombre'].replace(' ', '_')}.pdf"
 
     return Response(

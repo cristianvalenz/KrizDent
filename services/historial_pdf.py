@@ -25,6 +25,9 @@ from services.constantes import TIPOS_MORDIDA, TIPOS_PACIENTE
 from services.filtros import edad as _texto_edad
 from services.filtros import fecha as _texto_fecha
 from services.odontograma_pdf import dibujar_odontograma, leyenda_odontograma
+from services.periodontograma_pdf import (dibujar_periodontograma,
+                                          indices_periodontograma,
+                                          leyenda_periodontograma)
 
 AZUL = colors.HexColor("#162A5C")
 VERDE = colors.HexColor("#2E8B6E")
@@ -121,13 +124,16 @@ def _fila_dato(etiqueta, valor):
 
 def generar_historial_pdf(paciente: dict, entradas: list,
                           odontograma: dict | None = None,
-                          odontograma_caras: dict | None = None) -> bytes:
+                          odontograma_caras: dict | None = None,
+                          periodontograma: dict | None = None) -> bytes:
     """
     paciente: fila de "pacientes".
     entradas: filas de "historial" (con o sin historial_imagenes embebidas),
               ya ordenadas como se quieran mostrar (normalmente más reciente primero).
     odontograma / odontograma_caras: mismo formato que se le pasa al JS de la
               ficha web ({"11": {"estado":..., "perno":...}}, {"11": {"oclusal":...}}).
+    periodontograma: la fila más reciente de "periodontogramas", o None si el
+              paciente no tiene ninguno (entonces la sección no se imprime).
     Devuelve los bytes del PDF.
     """
     buffer = io.BytesIO()
@@ -182,6 +188,65 @@ def generar_historial_pdf(paciente: dict, entradas: list,
         ]))
         story.append(fila_tabla)
     story.append(Spacer(1, 14))
+
+    # ---- Periodontograma (solo si el paciente tiene uno) ---------------------
+    # Va inmediatamente después del odontograma porque son las dos cartas que
+    # se leen juntas: una dice qué pieza tratar, la otra en qué estado está el
+    # soporte que la sostiene.
+    if periodontograma:
+        story.append(Paragraph("Periodontograma", ESTILOS["seccion"]))
+        story.append(Paragraph(
+            f"Registrado el {_texto_fecha(periodontograma.get('fecha'))}",
+            ESTILOS["cuerpo_gris"]))
+        story.append(Spacer(1, 4))
+
+        carta = dibujar_periodontograma(
+            periodontograma.get("datos") or {},
+            paciente.get("tipo_paciente") or "adulto",
+        )
+        # Mismo cuidado que con el odontograma: scale() no toca width/height y
+        # Platypus seguiría reservando el tamaño original.
+        escala_p = min(1.6, doc.width / carta.width)
+        carta.scale(escala_p, escala_p)
+        carta.width *= escala_p
+        carta.height *= escala_p
+        carta.hAlign = "CENTER"
+        story.append(carta)
+        story.append(Spacer(1, 4))
+
+        celdas_leyenda = []
+        for color_hex, etiqueta in leyenda_periodontograma():
+            muestra = Table([[""]], colWidths=[7], rowHeights=[7])
+            muestra.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(color_hex)),
+                ("BOX", (0, 0), (-1, -1), 0.4, GRIS_CLARO),
+            ]))
+            celdas_leyenda.append(muestra)
+            celdas_leyenda.append(Paragraph(etiqueta, ESTILOS["cuerpo_gris"]))
+        tabla_leyenda = Table([celdas_leyenda])
+        tabla_leyenda.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 3),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+        ]))
+        story.append(tabla_leyenda)
+        story.append(Spacer(1, 6))
+
+        indices = indices_periodontograma(periodontograma)
+        tabla_indices = Table(
+            [[Paragraph(e, ESTILOS["etiqueta"]) for e, _ in indices],
+             [Paragraph(v, ESTILOS["valor"]) for _, v in indices]],
+            colWidths=[doc.width / len(indices)] * len(indices),
+        )
+        tabla_indices.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LINEABOVE", (0, 0), (-1, 0), 0.5, GRIS_CLARO),
+            ("LINEBELOW", (0, -1), (-1, -1), 0.5, GRIS_CLARO),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ]))
+        story.append(tabla_indices)
+        story.append(Spacer(1, 14))
 
     # ---- Datos generales -----------------------------------------------------
     edad_txt = _texto_edad(paciente.get("fecha_nac"))
