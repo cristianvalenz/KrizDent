@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>DentalSIS</title>
 <meta name="description" content="Software de gestión para consultorios odontológicos en Perú. Historia clínica, odontograma, periodontograma, recetas y caja en un solo lugar.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -259,6 +260,26 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
 .marco-cuerpo { padding: 20px 16px 16px; }
 .marco svg { display: block; width: 100%; height: auto; }
 
+/* Pestañas del marco: las dos cartas clínicas al mismo nivel */
+.marco-pestanas { display: flex; gap: 4px; margin-left: 8px; }
+.marco-pestana {
+    border: 0; border-radius: 6px;
+    padding: 5px 11px;
+    background: transparent; color: var(--texto-2);
+    font: 600 .72rem/1 var(--sans);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+}
+.marco-pestana:hover { color: var(--clinico); }
+.marco-pestana.activa { background: var(--clinico); color: #fff; }
+.marco-panel[hidden] { display: none; }
+.leyenda[hidden] { display: none; }
+.leyenda i.muestra-linea { height: 3px; border-radius: 0; }
+
+@media (max-width: 420px) {
+    .marco-pestana { padding: 5px 8px; font-size: .68rem; }
+}
+
 .leyenda { display: flex; flex-wrap: wrap; gap: 14px; padding: 14px 16px 4px; }
 .leyenda span { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; color: var(--texto-2); }
 .leyenda i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
@@ -377,6 +398,10 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
 .cara { stroke: #C6D0D6; stroke-width: .7; transition: fill .5s ease; }
 .eje { stroke: var(--linea); stroke-width: 1; stroke-dasharray: 3 3; }
 .fdi { font: 500 8.5px var(--mono); fill: var(--texto-3); text-anchor: middle; }
+/* El atributo text-anchor del SVG no le gana al CSS de .fdi: los rótulos
+   alineados a la izquierda necesitan su propia clase o se centran en x=4
+   y se salen del lienzo por la izquierda. */
+.fdi-izq { text-anchor: start; }
 :root[data-theme="dark"] .cara, :root:not([data-theme="light"]) .cara { stroke: #33485A; }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .cara { stroke: #C6D0D6; } }
 
@@ -448,20 +473,41 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
       </div>
     </div>
 
+    {# Las dos cartas clínicas comparten el marco: son las dos que un
+       odontólogo llena en cada control, así que ninguna va debajo de la otra. #}
     <div class="marco">
       <div class="marco-barra">
         <span></span><span></span><span></span>
-        <small>Odontograma · paciente</small>
+        <div class="marco-pestanas" role="tablist" aria-label="Cartas clínicas">
+          <button class="marco-pestana activa" type="button" role="tab"
+                  aria-selected="true" data-panel="panel-odonto">Odontograma</button>
+          <button class="marco-pestana" type="button" role="tab"
+                  aria-selected="false" data-panel="panel-perio">Periodontograma</button>
+        </div>
       </div>
+
       <div class="marco-cuerpo">
-        <svg id="odontograma" viewBox="0 0 640 290" role="img"
-             aria-label="Odontograma de 32 piezas con hallazgos marcados por cara"></svg>
+        <div class="marco-panel" id="panel-odonto" role="tabpanel">
+          <svg id="odontograma" viewBox="0 0 640 290" role="img"
+               aria-label="Odontograma de 32 piezas con hallazgos marcados por cara"></svg>
+        </div>
+        <div class="marco-panel" id="panel-perio" role="tabpanel" hidden>
+          <svg id="perio-heroe" viewBox="0 0 640 290" role="img"
+               aria-label="Carta periodontal con profundidad de sondaje por cara"></svg>
+        </div>
       </div>
-      <div class="leyenda">
+
+      <div class="leyenda" id="leyenda-odonto">
         <span><i style="background:#D64545"></i> Caries</span>
         <span><i style="background:#1B6E8C"></i> Obturado</span>
         <span><i style="background:#E08E3C"></i> En mal estado</span>
         <span><i style="background:#8A97A0"></i> Ausente</span>
+      </div>
+      <div class="leyenda" id="leyenda-perio" hidden>
+        <span><i style="background:#D64545"></i> Sangrado</span>
+        <span><i style="background:#1B6E8C"></i> Placa</span>
+        <span><i class="muestra-linea" style="background:#D64545"></i> Fondo de bolsa</span>
+        <span><i class="muestra-linea" style="background:#8A97A0"></i> Línea amelocementaria</span>
       </div>
     </div>
   </div>
@@ -1083,52 +1129,163 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
         }
     }
 
-    /* --- 2. Carta periodontal --- */
-    var perio = document.getElementById("perio");
-    if (perio) {
-        var PIEZAS = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
-        var pasoP = 25, mxP = 14, cejY = 96, escala = 2.6;
-        // Sondaje de ejemplo, en milímetros
-        var sondaje = [4,3,5,3,2,2,3,3,2,3,2,3,4,6,4,3];
+    /* --- 2. Carta periodontal ---
+       Una sola rutina para los dos tamaños. La versión del héroe dibuja las
+       DOS caras (vestibular arriba, palatina abajo), que es lo que distingue
+       a un periodontograma de un odontograma: seis sitios por pieza, no uno. */
+    var PIEZAS_SUP = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
+    // Milímetros de sondaje por pieza — el mismo caso en las dos vistas
+    var SONDAJE_V = [4,3,5,3,2,2,3,3,2,3,2,3,4,6,4,3];
+    var SONDAJE_P = [3,3,4,2,2,3,2,2,3,2,2,3,3,5,4,3];
+    var SANGRA    = [0,0,1,0,0,0,0,0,0,0,0,0,0,1,1,0];
+    var PLACA     = [1,0,1,0,0,0,1,1,0,0,0,0,1,1,0,0];
 
-        var puntos = [], fondo = [];
-        PIEZAS.forEach(function (fdi, i) {
-            var x = mxP + i * pasoP + 7;
-            var t = tipo(fdi);
-            var g = crear("g", {});
-            raices(t, fdi, x - 11, 42, 22, 24).forEach(function (d) {
-                g.appendChild(crear("path", {d: d, "class": "diente-raiz"}));
-            });
-            g.appendChild(crear("path", {d: corona(t, x - 11, 66, 22, 22), "class": "diente-corona"}));
-            perio.appendChild(g);
-
-            var y = cejY - sondaje[i] * escala;
-            puntos.push(x + "," + cejY);
-            fondo.push(x + "," + y);
-
-            var num = crear("text", {x: x, y: 128, "class": "fdi"});
-            num.textContent = fdi;
-            perio.appendChild(num);
-        });
-
-        perio.appendChild(crear("line", {x1: 8, y1: cejY, x2: 412, y2: cejY, stroke: "#D64545", "stroke-width": 1}));
-        var curva = crear("polyline", {
-            points: fondo.join(" "), fill: "none", stroke: "#4FA8C7",
-            "stroke-width": 1.6, "stroke-linejoin": "round"
-        });
-        perio.appendChild(curva);
-
-        fondo.forEach(function (p) {
-            var xy = p.split(",");
-            perio.appendChild(crear("circle", {cx: xy[0], cy: xy[1], r: 2.4, fill: "#4FA8C7"}));
-        });
-
-        var pie = crear("text", {x: 8, y: 158, "class": "fdi", "text-anchor": "start"});
-        pie.textContent = "Media de sondaje 3.3 mm · %IP 12.5 · %SAS 8.3";
-        perio.appendChild(pie);
+    function colorSitio(i, cara) {
+        if (SANGRA[i] && (cara === "v" || i % 2 === 0)) return "#D64545";
+        if (PLACA[i]) return "#1B6E8C";
+        return "#8A97A0";
     }
 
-    /* --- 3. Cambio de tema --- */
+    function dibujarPerio(svg, cfg) {
+        var paso = cfg.paso, margen = cfg.margen, escala = cfg.escala;
+        var cejV = cfg.cejV, altoCorona = cfg.altoCorona, altoRaiz = cfg.altoRaiz;
+        var anchoDiente = cfg.anchoDiente, ancho = cfg.ancho;
+
+        function equis(i) { return margen + i * paso + anchoDiente / 2; }
+
+        // --- Cara vestibular: raíces arriba, corona abajo, cuello en cejV ---
+        var fondoV = [];
+        PIEZAS_SUP.forEach(function (fdi, i) {
+            var x = equis(i), t = tipo(fdi), g = crear("g", {});
+            raices(t, fdi, x - anchoDiente / 2, cejV - altoRaiz, anchoDiente, altoRaiz)
+                .forEach(function (d) { g.appendChild(crear("path", {d: d, "class": "diente-raiz"})); });
+            g.appendChild(crear("path", {
+                d: corona(t, x - anchoDiente / 2, cejV, anchoDiente, altoCorona),
+                "class": "diente-corona"
+            }));
+            svg.appendChild(g);
+            fondoV.push([x, cejV - SONDAJE_V[i] * escala]);
+        });
+
+        // Línea amelocementaria: el cero desde donde se mide
+        svg.appendChild(crear("line", {
+            x1: margen - 6, y1: cejV, x2: ancho - margen + 6, y2: cejV,
+            stroke: "#8A97A0", "stroke-width": 1, "stroke-dasharray": "3 3"
+        }));
+
+        svg.appendChild(crear("polyline", {
+            points: fondoV.map(function (p) { return p[0] + "," + p[1]; }).join(" "),
+            fill: "none", stroke: "#D64545", "stroke-width": 1.6, "stroke-linejoin": "round"
+        }));
+        fondoV.forEach(function (p, i) {
+            svg.appendChild(crear("circle", {cx: p[0], cy: p[1], r: cfg.radio, fill: colorSitio(i, "v")}));
+            if (cfg.numeros) {
+                var n = crear("text", {x: p[0], y: p[1] - 7, "class": "fdi"});
+                n.textContent = SONDAJE_V[i];
+                svg.appendChild(n);
+            }
+        });
+
+        // --- Cara palatina (solo en la vista grande): todo espejado ---
+        if (cfg.dosCaras) {
+            var cejP = cfg.cejP, fondoP = [];
+            PIEZAS_SUP.forEach(function (fdi, i) {
+                var x = equis(i), t = tipo(fdi);
+                var g = crear("g", {transform: "translate(0 " + (2 * cejP) + ") scale(1 -1)"});
+                raices(t, fdi, x - anchoDiente / 2, cejP - altoRaiz, anchoDiente, altoRaiz)
+                    .forEach(function (d) { g.appendChild(crear("path", {d: d, "class": "diente-raiz"})); });
+                g.appendChild(crear("path", {
+                    d: corona(t, x - anchoDiente / 2, cejP, anchoDiente, altoCorona),
+                    "class": "diente-corona"
+                }));
+                svg.appendChild(g);
+                fondoP.push([x, cejP + SONDAJE_P[i] * escala]);
+            });
+
+            svg.appendChild(crear("line", {
+                x1: margen - 6, y1: cejP, x2: ancho - margen + 6, y2: cejP,
+                stroke: "#8A97A0", "stroke-width": 1, "stroke-dasharray": "3 3"
+            }));
+            svg.appendChild(crear("polyline", {
+                points: fondoP.map(function (p) { return p[0] + "," + p[1]; }).join(" "),
+                fill: "none", stroke: "#D64545", "stroke-width": 1.6, "stroke-linejoin": "round"
+            }));
+            fondoP.forEach(function (p, i) {
+                svg.appendChild(crear("circle", {cx: p[0], cy: p[1], r: cfg.radio, fill: colorSitio(i, "p")}));
+                if (cfg.numeros) {
+                    var n2 = crear("text", {x: p[0], y: p[1] + 13, "class": "fdi"});
+                    n2.textContent = SONDAJE_P[i];
+                    svg.appendChild(n2);
+                }
+            });
+
+            // Rótulos de cara, para que se entienda que son dos mediciones
+            ["Vestibular", "Palatino"].forEach(function (txt, k) {
+                var r = crear("text", {x: 4, y: k === 0 ? cejV - altoRaiz - 8 : cejP + altoRaiz + 16,
+                                       "class": "fdi fdi-izq"});
+                r.textContent = txt.toUpperCase();
+                svg.appendChild(r);
+            });
+        }
+
+        // Números FDI en la línea media, entre las dos arcadas
+        PIEZAS_SUP.forEach(function (fdi, i) {
+            var n = crear("text", {x: equis(i), y: cfg.yFdi, "class": "fdi"});
+            n.textContent = fdi;
+            svg.appendChild(n);
+        });
+
+        if (cfg.pie) {
+            var pie = crear("text", {x: 4, y: cfg.yPie, "class": "fdi fdi-izq"});
+            pie.textContent = cfg.pie;
+            svg.appendChild(pie);
+        }
+    }
+
+    var perioChico = document.getElementById("perio");
+    if (perioChico) {
+        dibujarPerio(perioChico, {
+            ancho: 420, paso: 25, margen: 14, anchoDiente: 22, escala: 2.6,
+            cejV: 96, altoRaiz: 24, altoCorona: 22, radio: 2.4,
+            dosCaras: false, numeros: false, yFdi: 128, yPie: 158,
+            pie: "Media de sondaje 3.3 mm · %IP 12.5 · %SAS 8.3"
+        });
+    }
+
+    var perioHeroe = document.getElementById("perio-heroe");
+    if (perioHeroe) {
+        dibujarPerio(perioHeroe, {
+            ancho: 640, paso: 37, margen: 26, anchoDiente: 26, escala: 4.4,
+            cejV: 108, altoRaiz: 42, altoCorona: 30,
+            cejP: 196, radio: 3.2,
+            dosCaras: true, numeros: true, yFdi: 155, yPie: 276,
+            pie: "6 sitios por pieza · media 3.1 mm · %IP 18.8 · %SAS 9.4"
+        });
+    }
+
+    /* --- 3. Pestañas del marco: odontograma / periodontograma --- */
+    var pestanas = document.querySelectorAll(".marco-pestana");
+    if (pestanas.length) {
+        var leyendas = {
+            "panel-odonto": document.getElementById("leyenda-odonto"),
+            "panel-perio": document.getElementById("leyenda-perio")
+        };
+        pestanas.forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                pestanas.forEach(function (otro) {
+                    var activo = otro === btn;
+                    otro.classList.toggle("activa", activo);
+                    otro.setAttribute("aria-selected", activo ? "true" : "false");
+                    var panel = document.getElementById(otro.dataset.panel);
+                    if (panel) panel.hidden = !activo;
+                    var ley = leyendas[otro.dataset.panel];
+                    if (ley) ley.hidden = !activo;
+                });
+            });
+        });
+    }
+
+    /* --- 4. Cambio de tema --- */
     var boton = document.getElementById("tema");
     if (boton) {
         var raiz = document.documentElement;
