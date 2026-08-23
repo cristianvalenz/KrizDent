@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block titulo %}{{ clinica.nombre }} · Administración{% endblock %}
+{% block titulo %}{{ clinica.nombre }}{% endblock %}
 
 {% block contenido %}
 <div class="kd-encabezado">
@@ -18,10 +18,36 @@
 <div class="row g-3">
   <!-- ================= PLAN Y SUSCRIPCIÓN ================= -->
   <div class="col-lg-6">
-    <form method="post" action="{{ url_for('admin.guardar_clinica', clinica_id=clinica.id) }}" class="card">
+    <form method="post" action="{{ url_for('admin.guardar_clinica', clinica_id=clinica.id) }}" class="card"
+          enctype="multipart/form-data">
       <div class="card-header">Datos y plan</div>
       <div class="card-body">
         <div class="row g-3">
+          <div class="col-12 d-flex align-items-start gap-3">
+            <div class="kd-logo-previa">
+              {% if clinica.logo_url %}
+                <img src="{{ clinica.logo_url }}" alt="Logo de {{ clinica.nombre }}">
+              {% else %}
+                <span>{{ clinica.nombre | iniciales }}</span>
+              {% endif %}
+            </div>
+            <div class="flex-grow-1">
+              <label class="form-label" for="logo">Logo de la clínica</label>
+              <input class="form-control form-control-sm" type="file" id="logo" name="logo"
+                     accept=".jpg,.jpeg,.png,.webp,.svg">
+              <div class="form-text">
+                Aparece en su barra lateral y en el encabezado de sus recetas e historias.
+                Si no sube ninguno, se usan sus iniciales.
+              </div>
+              {% if clinica.logo_url %}
+                <label class="kd-check mt-2">
+                  <input type="checkbox" name="quitar_logo">
+                  <span>Quitar el logo actual</span>
+                </label>
+              {% endif %}
+            </div>
+          </div>
+
           <div class="col-12">
             <label class="form-label" for="nombre">Nombre</label>
             <input class="form-control" id="nombre" name="nombre" value="{{ clinica.nombre }}" required>

@@ -17,6 +17,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 
 from services.auth import hashear, requiere_superadmin, usuario_actual
 from services.constantes import MODULOS, ROLES
+from services.storage import ErrorSubida, borrar_imagen, subir_logo
 from services.supabase_client import sb
 
 
@@ -148,7 +149,7 @@ def clinica(clinica_id):
 @bp.route("/clinicas/<int:clinica_id>/guardar", methods=["POST"])
 @requiere_superadmin
 def guardar_clinica(clinica_id):
-    sb.table("clinicas").update({
+    cambios = {
         "nombre": (request.form.get("nombre") or "").strip(),
         "ruc": (request.form.get("ruc") or "").strip() or None,
         "telefono": (request.form.get("telefono") or "").strip() or None,
@@ -156,7 +157,30 @@ def guardar_clinica(clinica_id):
         "activa": request.form.get("activa") == "on",
         "vence_el": _fecha_o_none(request.form.get("vence_el")),
         "modulos": _modulos_del_form(),
-    }).eq("id", clinica_id).execute()
+    }
+
+    filas = sb.table("clinicas").select("logo_path").eq("id", clinica_id).limit(1).execute().data
+    anterior = filas[0].get("logo_path") if filas else None
+
+    if request.form.get("quitar_logo") == "on":
+        cambios["logo_url"] = None
+        cambios["logo_path"] = None
+        if anterior:
+            borrar_imagen(anterior)
+
+    archivo = request.files.get("logo")
+    if archivo and archivo.filename:
+        try:
+            subido = subir_logo(archivo, clinica_id)
+        except ErrorSubida as e:
+            flash(str(e), "danger")
+            return redirect(url_for("admin.clinica", clinica_id=clinica_id))
+        cambios["logo_url"] = subido["url"]
+        cambios["logo_path"] = subido["storage_path"]
+        if anterior:
+            borrar_imagen(anterior)      # el viejo ya no lo referencia nadie
+
+    sb.table("clinicas").update(cambios).eq("id", clinica_id).execute()
     flash("Clínica actualizada.", "success")
     return redirect(url_for("admin.clinica", clinica_id=clinica_id))
 

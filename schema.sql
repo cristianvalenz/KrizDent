@@ -19,6 +19,12 @@ create table if not exists clinicas (
     ruc         text,
     direccion   text,
     telefono    text,
+    -- Marca propia: la clínica la ve en su barra lateral y sale en el
+    -- encabezado de sus recetas e historias. Si está vacía se usan las
+    -- iniciales del nombre. logo_path es la ruta en el bucket, para poder
+    -- borrar el archivo viejo al reemplazarlo.
+    logo_url    text,
+    logo_path   text,
     -- Suscripción mensual: se entra solo si está activa y no vencida.
     activa      boolean not null default true,
     vence_el    date,                          -- nulo = sin vencimiento

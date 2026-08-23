@@ -125,6 +125,33 @@ def datos_clinica() -> dict:
     }
 
 
+def logo_clinica():
+    """
+    Bytes del logo de la clínica en sesión, para incrustarlo en un PDF; None
+    si no tiene o no se pudo traer.
+
+    Se descartan los SVG porque reportlab no los dibuja, y cualquier fallo de
+    red devuelve None a propósito: una receta no debe quedarse sin imprimir
+    porque el logo tardó. Se cachea por petición porque el encabezado se
+    vuelve a pintar en cada página del PDF.
+    """
+    from urllib.request import urlopen                # import local: solo lo usa el PDF
+
+    if "logo_bytes" in g:
+        return g.logo_bytes
+
+    g.logo_bytes = None
+    actual = clinica_actual()
+    url = (actual or {}).get("logo_url")
+    if url and not url.lower().split("?")[0].endswith(".svg"):
+        try:
+            with urlopen(url, timeout=4) as respuesta:
+                g.logo_bytes = respuesta.read()
+        except Exception:
+            g.logo_bytes = None
+    return g.logo_bytes
+
+
 def es_superadmin() -> bool:
     usuario = usuario_actual()
     return bool(usuario and usuario["rol"] == "superadmin")

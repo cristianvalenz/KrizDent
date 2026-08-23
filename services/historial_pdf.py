@@ -20,7 +20,7 @@ from reportlab.platypus import (BaseDocTemplate, Frame, HRFlowable,
                                  PageTemplate, Paragraph, Spacer, Table,
                                  TableStyle)
 
-from services.auth import datos_clinica
+from services.auth import datos_clinica, logo_clinica
 from services.constantes import TIPOS_MORDIDA, TIPOS_PACIENTE
 from services.filtros import edad as _texto_edad
 from services.filtros import fecha as _texto_fecha
@@ -33,6 +33,16 @@ GRIS = colors.HexColor("#5C6D79")
 GRIS_CLARO = colors.HexColor("#D8E2E7")
 
 LOGO_PATH = os.path.join(os.path.dirname(__file__), "..", "static", "img", "logo.jpg")
+
+
+def _logo():
+    """El logo de la clínica en sesión; si no subió ninguno, el del sistema."""
+    datos = logo_clinica()
+    if datos:
+        return ImageReader(io.BytesIO(datos))
+    if os.path.exists(LOGO_PATH):
+        return ImageReader(LOGO_PATH)
+    return None
 
 ESTILOS = {
     "titulo": ParagraphStyle("titulo", fontName="Helvetica-Bold", fontSize=15,
@@ -67,9 +77,10 @@ def _encabezado_pie(paciente):
         margen = doc.leftMargin
 
         c.saveState()
-        if os.path.exists(LOGO_PATH):
+        logo = _logo()
+        if logo:
             lado = 34
-            c.drawImage(ImageReader(LOGO_PATH), margen, alto - margen - lado + 6,
+            c.drawImage(logo, margen, alto - margen - lado + 6,
                         width=lado, height=lado, preserveAspectRatio=True, mask="auto")
             tx = margen + lado + 10
         else:

@@ -21,7 +21,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
-from services.auth import datos_clinica
+from services.auth import clinica_actual, datos_clinica, logo_clinica
 from services.filtros import edad as _texto_edad
 
 AZUL = (0x16 / 255, 0x2A / 255, 0x5C / 255)      # navy de la marca
@@ -45,36 +45,67 @@ for _nombre_win in ("BRUSHSCI.TTF", "brushsci.ttf"):
             pass
         break
 
-_marca_agua_cache: bytes | None = None
+def _imagen_logo():
+    """El logo de la clínica en sesión; si no subió ninguno, el del sistema."""
+    datos = logo_clinica()
+    if datos:
+        return Image.open(io.BytesIO(datos))
+    if os.path.exists(LOGO_PATH):
+        return Image.open(LOGO_PATH)
+    return None
+
+
+def _logo() -> "ImageReader | None":
+    imagen = _imagen_logo()
+    if imagen is None:
+        return None
+    buffer = io.BytesIO()
+    imagen.convert("RGBA").save(buffer, format="PNG")
+    buffer.seek(0)
+    return ImageReader(buffer)
+
+
+# El desvanecido recorre la imagen píxel a píxel, así que se cachea. La clave
+# es la URL del logo (que cambia al reemplazarlo) y no el id de la clínica:
+# así una clínica nunca hereda la marca de agua de otra.
+_marca_agua_cache: dict = {}
 
 
 def _marca_agua_logo() -> "ImageReader | None":
     """
-    Versión desvanecida del logo para usar como marca de agua dentro de la
-    caja "Rp.", igual que en la plantilla de referencia. Se calcula una sola
-    vez por proceso (no en cada receta) y se cachea en memoria.
+    Versión desvanecida del logo, como marca de agua dentro de la caja "Rp.".
     """
-    global _marca_agua_cache
-    if _marca_agua_cache is not None:
-        return ImageReader(io.BytesIO(_marca_agua_cache))
-    if not os.path.exists(LOGO_PATH):
+    clinica = clinica_actual()
+    clave = (clinica or {}).get("logo_url") or "sistema"
+
+    if clave in _marca_agua_cache:
+        guardado = _marca_agua_cache[clave]
+        return ImageReader(io.BytesIO(guardado)) if guardado else None
+
+    imagen = _imagen_logo()
+    if imagen is None:
+        _marca_agua_cache[clave] = None
         return None
 
-    logo = Image.open(LOGO_PATH).convert("RGB")
+    # RGBA y no RGB: un logo PNG con fondo transparente se volvería negro al
+    # convertirlo a RGB y la marca de agua saldría como un cuadro sucio.
+    logo = imagen.convert("RGBA")
     salida = Image.new("RGBA", logo.size, (0, 0, 0, 0))
     origen = logo.load()
     destino = salida.load()
     for y in range(logo.height):
         for x in range(logo.width):
-            r, g, b = origen[x, y]
-            oscuridad = 255 - min(r, g, b)     # 0 en el blanco de fondo, alto donde hay tinta
-            alpha = min(255, int(oscuridad * 0.16))
+            r, verde, b, opacidad = origen[x, y]
+            if opacidad == 0:
+                continue                       # transparente: ahí no hay tinta
+            oscuridad = 255 - min(r, verde, b)  # 0 en el blanco de fondo, alto en la tinta
+            alpha = min(255, int(oscuridad * 0.16 * (opacidad / 255)))
             destino[x, y] = (0x9F, 0xB3, 0xC9, alpha)
 
     buffer = io.BytesIO()
     salida.save(buffer, format="PNG")
-    _marca_agua_cache = buffer.getvalue()
-    return ImageReader(io.BytesIO(_marca_agua_cache))
+    _marca_agua_cache[clave] = buffer.getvalue()
+    return ImageReader(io.BytesIO(_marca_agua_cache[clave]))
 
 
 def _fecha_es(valor) -> str:
@@ -226,8 +257,9 @@ def _dibujar_bloque(c, x0, y0, w, h, receta, paciente, etiqueta_copia):
 
     # ---- Encabezado: logo a la izquierda, contacto a la derecha -----------
     logo_lado = 46
-    if os.path.exists(LOGO_PATH):
-        c.drawImage(ImageReader(LOGO_PATH), x0, y - logo_lado,
+    logo = _logo()
+    if logo:
+        c.drawImage(logo, x0, y - logo_lado,
                     width=logo_lado, height=logo_lado,
                     preserveAspectRatio=True, mask="auto")
 

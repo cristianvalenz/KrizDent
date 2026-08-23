@@ -856,3 +856,46 @@ a:hover { color: var(--kd-clinico-alt); }
 }
 .kd-usuario-fila .form-label { font-size: .64rem; margin-bottom: 3px; }
 .kd-usuario-acciones { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+
+/* Marca del cliente en la barra lateral: su logo, o sus iniciales si no tiene */
+.kd-marca-inicial {
+    flex: 0 0 32px;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    background: var(--kd-clinico); color: #fff;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .72rem; font-weight: 600; letter-spacing: -.02em;
+}
+.kd-marca > span:last-child {
+    min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Pantalla de acceso: marca neutra del sistema, sin ninguna clínica */
+.kd-acceso-marca { justify-content: center; gap: 8px; }
+.kd-acceso-icono-sistema {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: var(--kd-clinico); color: #fff;
+}
+.kd-acceso-marca small {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .6rem; letter-spacing: .14em; text-transform: uppercase;
+    color: #8A97A0;
+}
+
+/* Vista previa del logo en el panel de administración */
+.kd-logo-previa {
+    flex: 0 0 72px;
+    width: 72px; height: 72px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--kd-mineral); border-radius: var(--kd-radio);
+    background: #fff; overflow: hidden;
+}
+.kd-logo-previa img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.kd-logo-previa span {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 1.05rem; font-weight: 600; color: var(--kd-clinico);
+}

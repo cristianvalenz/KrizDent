@@ -84,3 +84,48 @@ def subir_bytes(contenido: bytes, ruta: str, content_type: str) -> str:
     except Exception as e:
         raise ErrorSubida(f"Storage rechazó el archivo: {e}") from e
     return sb.storage.from_(BUCKET).get_public_url(ruta)
+
+
+def subir_logo(archivo, clinica_id: int) -> dict:
+    """
+    Sube el logo de una clínica y devuelve {"url": ..., "storage_path": ...}.
+
+    Va aparte de subir_imagen() porque un logo no cuelga de ningún paciente y
+    acepta SVG además de los formatos de foto: muchas clínicas tienen su marca
+    en vectorial y perdería nitidez convertida a mapa de bits.
+    """
+    nombre_orig = archivo.filename or "logo"
+    ext = os.path.splitext(nombre_orig)[1].lower()
+
+    permitidas = EXT_IMAGEN | {".svg"}
+    if ext not in permitidas:
+        raise ErrorSubida(
+            f"«{nombre_orig}» no es una imagen válida. "
+            f"Formatos aceptados: {', '.join(sorted(permitidas))}."
+        )
+
+    contenido = archivo.read()
+    if not contenido:
+        raise ErrorSubida(f"«{nombre_orig}» llegó vacío. Vuelve a seleccionarlo.")
+
+    # El UUID hace que el navegador no siga mostrando el logo viejo en caché
+    # cuando se reemplaza.
+    storage_path = f"clinicas/{clinica_id}/{uuid.uuid4().hex}{ext}"
+    content_type = ("image/svg+xml" if ext == ".svg"
+                    else mimetypes.guess_type(nombre_orig)[0] or "application/octet-stream")
+
+    try:
+        sb.storage.from_(BUCKET).upload(
+            path=storage_path, file=contenido,
+            file_options={"content-type": content_type, "upsert": "false"},
+        )
+    except Exception as e:
+        raise ErrorSubida(
+            f"Storage rechazó «{nombre_orig}»: {e}. "
+            f"Verifica que el bucket «{BUCKET}» exista y sea público."
+        ) from e
+
+    return {
+        "storage_path": storage_path,
+        "url": sb.storage.from_(BUCKET).get_public_url(storage_path),
+    }
