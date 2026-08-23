@@ -46,8 +46,7 @@
   </div>
 
   {% if paciente.alergias %}
-    <div class="card-header border-top border-bottom-0 d-flex align-items-center gap-2"
-         style="background:#FBEAEA;color:var(--kd-lesion);border-color:#F2D4D4">
+    <div class="card-header border-top border-bottom-0 d-flex align-items-center gap-2 kd-aviso-alerta">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M12 3 2.5 20h19L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
         <path d="M12 9.5v5M12 17.2v.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
@@ -56,8 +55,7 @@
       <span class="small">{{ paciente.alergias }}</span>
     </div>
   {% else %}
-    <div class="card-header border-top border-bottom-0 d-flex align-items-center gap-2"
-         style="background:#E6F4EF;color:var(--kd-verde);border-color:#CFE9DF">
+    <div class="card-header border-top border-bottom-0 d-flex align-items-center gap-2 kd-aviso-ok">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>

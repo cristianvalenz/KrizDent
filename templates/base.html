@@ -13,6 +13,19 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Estilos propios (van después de Bootstrap para poder sobrescribirlo) -->
   <link href="{{ url_for('static', filename='css/krisdent.css') }}" rel="stylesheet">
+
+  <!-- El tema se aplica ANTES de pintar: si se hiciera al final del body,
+       una pantalla en oscuro parpadearía en blanco en cada carga. -->
+  <script>
+    (function () {
+      try {
+        var elegido = localStorage.getItem("kd-tema");
+        if (elegido === "dark" || elegido === "light") {
+          document.documentElement.setAttribute("data-theme", elegido);
+        }
+      } catch (e) { /* navegador sin almacenamiento: queda el tema del sistema */ }
+    })();
+  </script>
 </head>
 <body>
 
@@ -164,6 +177,21 @@
 
   {% if usuario_sesion %}
     <div class="kd-sidebar-pie">
+      <button class="kd-tema" type="button" id="kd-tema" aria-pressed="false">
+        <span class="kd-tema-icono" aria-hidden="true">
+          <svg class="kd-icono-sol" width="15" height="15" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7"
+                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <svg class="kd-icono-luna" width="15" height="15" viewBox="0 0 24 24" fill="none">
+            <path d="M20 14.2A8.4 8.4 0 0 1 9.8 4a8.4 8.4 0 1 0 10.2 10.2Z"
+                  stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="kd-tema-texto">Tema oscuro</span>
+      </button>
+
       <a class="kd-cuenta" href="{{ url_for('auth.perfil') }}">
         <span class="kd-cuenta-inicial">{{ usuario_sesion.nombre | iniciales }}</span>
         <span class="kd-cuenta-datos">
@@ -185,6 +213,45 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Cambio de tema. Si nunca se eligió uno, manda el del sistema operativo;
+// al pulsar, la elección queda guardada para las próximas visitas.
+(function () {
+    "use strict";
+    var boton = document.getElementById("kd-tema");
+    if (!boton) return;
+
+    var raiz = document.documentElement;
+    var delSistema = window.matchMedia("(prefers-color-scheme: dark)");
+    var texto = boton.querySelector(".kd-tema-texto");
+
+    function esOscuro() {
+        var puesto = raiz.getAttribute("data-theme");
+        return puesto ? puesto === "dark" : delSistema.matches;
+    }
+
+    function reflejar() {
+        var oscuro = esOscuro();
+        boton.setAttribute("aria-pressed", oscuro ? "true" : "false");
+        texto.textContent = oscuro ? "Tema claro" : "Tema oscuro";
+        boton.title = oscuro ? "Cambiar a tema claro" : "Cambiar a tema oscuro";
+    }
+
+    boton.addEventListener("click", function () {
+        var nuevo = esOscuro() ? "light" : "dark";
+        raiz.setAttribute("data-theme", nuevo);
+        try { localStorage.setItem("kd-tema", nuevo); } catch (e) { /* sin almacenamiento */ }
+        reflejar();
+    });
+
+    // Si el usuario no eligió nada, seguir al sistema cuando este cambie.
+    delSistema.addEventListener("change", function () {
+        if (!raiz.getAttribute("data-theme")) reflejar();
+    });
+
+    reflejar();
+})();
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

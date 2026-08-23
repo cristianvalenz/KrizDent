@@ -4,6 +4,18 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap">
 
+<!-- El tema se aplica antes de pintar, para que no parpadee en blanco. -->
+<script>
+  (function () {
+    try {
+      var elegido = localStorage.getItem("kd-tema");
+      if (elegido === "dark" || elegido === "light") {
+        document.documentElement.setAttribute("data-theme", elegido);
+      }
+    } catch (e) { /* sin almacenamiento: manda el tema del sistema */ }
+  })();
+</script>
+
 <style>
 /* ===================================================================
    DentalSIS — one page
@@ -150,6 +162,30 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
 /* En pantalla chica solo cabe «Ingresar»: la demo se pide igual bajando. */
 @media (max-width: 560px) { .barra-acciones .boton-solido { display: none; } }
 .barra-acciones .boton { padding: 9px 16px; }
+
+/* Botón de tema: muestra el icono del tema al que se VA a cambiar */
+.tema {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px;
+    border: 1.5px solid var(--linea); border-radius: 8px;
+    background: var(--panel); color: var(--texto-2);
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+}
+.tema:hover { border-color: var(--clinico); color: var(--clinico); }
+.icono-luna { display: block; }
+.icono-sol  { display: none; }
+:root[data-theme="dark"] .icono-luna { display: none; }
+:root[data-theme="dark"] .icono-sol  { display: block; }
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .icono-luna { display: none; }
+    :root:not([data-theme="light"]) .icono-sol  { display: block; }
+}
+.visualmente-oculto {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
 
 /* ---------- Secciones ---------- */
 .seccion { padding: 84px 0; }
@@ -368,6 +404,17 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
       <a href="#mensualidad">Mensualidad</a>
     </nav>
     <div class="barra-acciones">
+      <button class="tema" type="button" id="tema" aria-pressed="false" title="Cambiar de tema">
+        <svg class="icono-luna" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M20 14.2A8.4 8.4 0 0 1 9.8 4a8.4 8.4 0 1 0 10.2 10.2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+        <svg class="icono-sol" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <span class="visualmente-oculto">Cambiar entre tema claro y oscuro</span>
+      </button>
       <a class="boton boton-linea" href="/entrar">
         Ingresar
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1079,6 +1126,31 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
         var pie = crear("text", {x: 8, y: 158, "class": "fdi", "text-anchor": "start"});
         pie.textContent = "Media de sondaje 3.3 mm · %IP 12.5 · %SAS 8.3";
         perio.appendChild(pie);
+    }
+
+    /* --- 3. Cambio de tema --- */
+    var boton = document.getElementById("tema");
+    if (boton) {
+        var raiz = document.documentElement;
+        var delSistema = window.matchMedia("(prefers-color-scheme: dark)");
+
+        function esOscuro() {
+            var puesto = raiz.getAttribute("data-theme");
+            return puesto ? puesto === "dark" : delSistema.matches;
+        }
+        function reflejar() {
+            boton.setAttribute("aria-pressed", esOscuro() ? "true" : "false");
+        }
+        boton.addEventListener("click", function () {
+            var nuevo = esOscuro() ? "light" : "dark";
+            raiz.setAttribute("data-theme", nuevo);
+            try { localStorage.setItem("kd-tema", nuevo); } catch (e) { /* sin almacenamiento */ }
+            reflejar();
+        });
+        delSistema.addEventListener("change", function () {
+            if (!raiz.getAttribute("data-theme")) reflejar();
+        });
+        reflejar();
     }
 })();
 </script>

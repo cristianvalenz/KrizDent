@@ -64,7 +64,7 @@
               {% elif p.vencido %}
                 <span style="color:var(--kd-lesion)">Vencido ({{ p.fecha_vencimiento }})</span>
               {% elif p.por_vencer %}
-                <span style="color:#8A6212">Vence en {{ p.dias_para_vencer }} día(s)</span>
+                <span class="kd-texto-espera">Vence en {{ p.dias_para_vencer }} día(s)</span>
               {% else %}
                 <span class="dato">{{ p.fecha_vencimiento }}</span>
               {% endif %}

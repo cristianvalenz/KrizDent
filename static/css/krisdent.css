@@ -6,7 +6,19 @@
    Esos dos colores mandan en toda la interfaz, no solo en el diagrama.
    ===================================================================== */
 
+/* ---------------------------------------------------------------------
+   TEMA CLARO (base). El oscuro más abajo solo redefine estas variables:
+   ningún componente pinta un color literal, para que el cambio de tema
+   no deje texto de un tema sobre el fondo del otro.
+
+   Los colores CLÍNICOS (rojo caries, azul obturado, verde corona, oro,
+   gris ausente) NO cambian entre temas: rojo significa caries y tiene
+   que verse igual siempre. Por eso el odontograma y la carta periodontal
+   se dibujan sobre un papel claro en ambos temas.
+   --------------------------------------------------------------------- */
 :root {
+    color-scheme: light;
+
     --kd-tinta:      #16232E;   /* casi negro azulado: texto y barra lateral */
     --kd-tinta-suave:#2C3E4C;
     --kd-porcelana:  #F4F7F8;   /* fondo general */
@@ -19,16 +31,195 @@
     --kd-gris:       #8A97A0;   /* ausente */
     --kd-verde:      #2E8B6E;   /* completado */
 
+    /* Texto y superficies */
+    --kd-texto:      #16232E;
+    --kd-texto-2:    #6C7C88;   /* secundario */
+    --kd-texto-3:    #7C8A94;   /* rótulos y datos apagados */
+    --kd-borde-2:    #C6D0D6;   /* borde más marcado / trazo de dibujo */
+    --kd-borde-3:    #A9BAC4;
+    --kd-linea-suave:#EDF2F4;   /* separador de filas de tabla */
+    --kd-suave:      #FCFDFE;   /* tarjeta dentro de tarjeta */
+    --kd-banda:      #F7FAFB;   /* fondo tenue (arcadas, franjas) */
+    --kd-hover:      #F6FAFB;
+    --kd-apagado:    #E7ECEF;   /* casillas vacías, pieza ausente */
+    --kd-clinico-suave: #E3EDF1; /* fondo de acento azul */
+
+    /* Estados: fondo y texto de cada píldora */
+    --kd-fondo-alerta: #FBEAEA;
+    --kd-borde-alerta: #F2D4D4;
+    --kd-fondo-ok:     #E6F4EF;
+    --kd-borde-ok:     #CFE9DF;
+    --kd-fondo-espera: #FDF3E3;
+    --kd-texto-espera: #8A6212;
+
+    /* El papel de las cartas clínicas: claro en ambos temas */
+    --kd-papel:      #FFFFFF;
+    --kd-papel-2:    #F7FAFB;
+    --kd-papel-linea:#C6D0D6;
+    --kd-papel-texto:#16232E;
+
+    /* Azul de los botones rellenos. NO cambia con el tema: el texto va
+       en blanco encima y el azul aclarado del oscuro no da contraste. */
+    --kd-accion:     #1B6E8C;
+    --kd-accion-alt: #155971;
+
     --kd-radio: 10px;
     /* Sombra corta y definida: en una interfaz clínica lee como precisión,
        no como tarjeta flotante. */
     --kd-sombra: 0 1px 2px rgba(22, 35, 46, .05), 0 3px 10px rgba(22, 35, 46, .04);
 }
 
+/* Tema oscuro por preferencia del sistema. El :not() deja que una elección
+   explícita de tema claro le gane al sistema. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        color-scheme: dark;
+
+        --kd-tinta:      #0B1219;
+        --kd-tinta-suave:#16232E;
+        --kd-porcelana:  #0E1720;
+        --kd-esmalte:    #16232E;
+        --kd-mineral:    #293A47;
+        --kd-clinico:    #4FA8C7;
+        --kd-clinico-alt:#7BC4DC;
+        --kd-lesion:     #E8706F;
+        --kd-oro:        #D9B94A;
+        --kd-gris:       #94A4AE;
+        --kd-verde:      #4FB795;
+
+        --kd-texto:      #E6EEF2;
+        --kd-texto-2:    #A2B3BE;
+        --kd-texto-3:    #7C909D;
+        --kd-borde-2:    #33485A;
+        --kd-borde-3:    #3E566A;
+        --kd-linea-suave:#22323E;
+        --kd-suave:      #19283340;
+        --kd-banda:      #1A2A35;
+        --kd-hover:      #1C2E3A;
+        --kd-apagado:    #24363F;
+        --kd-clinico-suave: #1D3644;
+
+        --kd-fondo-alerta: #35201F;
+        --kd-borde-alerta: #4E2B2A;
+        --kd-fondo-ok:     #16332A;
+        --kd-borde-ok:     #23483C;
+        --kd-fondo-espera: #33291A;
+        --kd-texto-espera: #D9B94A;
+
+        --kd-sombra: 0 1px 2px rgba(0,0,0,.34), 0 3px 10px rgba(0,0,0,.28);
+    }
+}
+
+/* Elección explícita del usuario: gana sobre el sistema en ambos sentidos. */
+:root[data-theme="dark"] {
+    color-scheme: dark;
+
+    --kd-tinta:      #0B1219;
+    --kd-tinta-suave:#16232E;
+    --kd-porcelana:  #0E1720;
+    --kd-esmalte:    #16232E;
+    --kd-mineral:    #293A47;
+    --kd-clinico:    #4FA8C7;
+    --kd-clinico-alt:#7BC4DC;
+    --kd-lesion:     #E8706F;
+    --kd-oro:        #D9B94A;
+    --kd-gris:       #94A4AE;
+    --kd-verde:      #4FB795;
+
+    --kd-texto:      #E6EEF2;
+    --kd-texto-2:    #A2B3BE;
+    --kd-texto-3:    #7C909D;
+    --kd-borde-2:    #33485A;
+    --kd-borde-3:    #3E566A;
+    --kd-linea-suave:#22323E;
+    --kd-suave:      #19283340;
+    --kd-banda:      #1A2A35;
+    --kd-hover:      #1C2E3A;
+    --kd-apagado:    #24363F;
+    --kd-clinico-suave: #1D3644;
+
+    --kd-fondo-alerta: #35201F;
+    --kd-borde-alerta: #4E2B2A;
+    --kd-fondo-ok:     #16332A;
+    --kd-borde-ok:     #23483C;
+    --kd-fondo-espera: #33291A;
+    --kd-texto-espera: #D9B94A;
+
+    --kd-sombra: 0 1px 2px rgba(0,0,0,.34), 0 3px 10px rgba(0,0,0,.28);
+}
+
+/* ---------------------------------------------------------------------
+   Bootstrap pinta con sus propias variables (--bs-*). Si no se le apuntan
+   a las nuestras, en tema oscuro deja su texto casi negro sobre nuestras
+   tarjetas oscuras. Se enlazan una sola vez: como apuntan a tokens que el
+   bloque oscuro redefine, cambian solas con el tema.
+   --------------------------------------------------------------------- */
+:root {
+    --bs-body-color: var(--kd-texto);
+    --bs-body-bg: var(--kd-porcelana);
+    --bs-emphasis-color: var(--kd-texto);
+    --bs-heading-color: var(--kd-texto);
+    --bs-secondary-color: var(--kd-texto-2);
+    --bs-tertiary-color: var(--kd-texto-3);
+    --bs-secondary-bg: var(--kd-porcelana);
+    --bs-tertiary-bg: var(--kd-banda);
+    --bs-border-color: var(--kd-mineral);
+    --bs-link-color: var(--kd-clinico);
+    --bs-link-hover-color: var(--kd-clinico-alt);
+
+    --bs-table-color: var(--kd-texto);
+    --bs-table-bg: transparent;
+    --bs-table-border-color: var(--kd-mineral);
+
+    --bs-list-group-color: var(--kd-texto);
+    --bs-list-group-bg: var(--kd-esmalte);
+    --bs-list-group-border-color: var(--kd-mineral);
+    --bs-list-group-action-hover-color: var(--kd-texto);
+    --bs-list-group-action-hover-bg: var(--kd-hover);
+
+    --bs-modal-color: var(--kd-texto);
+    --bs-modal-bg: var(--kd-esmalte);
+    --bs-modal-border-color: var(--kd-mineral);
+    --bs-modal-header-border-color: var(--kd-mineral);
+    --bs-modal-footer-border-color: var(--kd-mineral);
+
+    --bs-card-bg: var(--kd-esmalte);
+    --bs-card-color: var(--kd-texto);
+    --bs-card-border-color: var(--kd-mineral);
+}
+
+/* .text-muted usa rgba() sobre este color, así que también hay que darlo. */
+:root[data-theme="dark"] { --bs-body-color-rgb: 230, 238, 242; }
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bs-body-color-rgb: 230, 238, 242; }
+}
+.text-muted { color: var(--kd-texto-2) !important; }
+
+/* ---------------------------------------------------------------------
+   El odontograma y la carta periodontal son islas de papel claro dentro
+   de la interfaz. Ahí dentro rigen los valores del tema CLARO: como las
+   variables se heredan, basta redeclararlas una vez y todo lo que hay
+   dentro (rótulos, bordes, números FDI) queda legible sobre el papel.
+   --------------------------------------------------------------------- */
+.kd-odontograma, .kd-pg-scroll {
+    --kd-texto:      #16232E;
+    --kd-texto-2:    #6C7C88;
+    --kd-texto-3:    #7C8A94;
+    --kd-clinico:    #1B6E8C;
+    --kd-clinico-alt:#155971;
+    --kd-mineral:    #D8E2E7;
+    --kd-borde-2:    #C6D0D6;
+    --kd-borde-3:    #A9BAC4;
+    --kd-esmalte:    #FFFFFF;
+    --kd-porcelana:  #F4F7F8;
+    --kd-apagado:    #EDF1F3;
+    --kd-linea-suave:#EDF2F4;
+}
+
 /* ---------- Base ---------- */
 body {
     background: var(--kd-porcelana);
-    color: var(--kd-tinta);
+    color: var(--kd-texto);
     font-family: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
     font-size: 15px;
 }
@@ -97,7 +288,7 @@ a:hover { color: var(--kd-clinico-alt); }
     transition: background .15s, color .15s;
 }
 .kd-nav a:hover { background: rgba(255,255,255,.07); color: #fff; }
-.kd-nav a.activo { background: var(--kd-clinico); color: #fff; }
+.kd-nav a.activo { background: #1B6E8C; color: #fff; }
 .kd-nav a svg { flex: 0 0 18px; }
 
 .kd-sidebar-pie {
@@ -121,14 +312,14 @@ a:hover { color: var(--kd-clinico-alt); }
     margin-bottom: 22px;
 }
 .kd-encabezado h1 { font-size: 1.5rem; margin: 0; }
-.kd-encabezado .subtitulo { color: #6C7C88; font-size: .87rem; margin: 3px 0 0; }
+.kd-encabezado .subtitulo { color: var(--kd-texto-2); font-size: .87rem; margin: 3px 0 0; }
 
 .kd-eyebrow {
     font-family: "IBM Plex Mono", monospace;
     font-size: .66rem;
     letter-spacing: .17em;
     text-transform: uppercase;
-    color: #8A97A0;
+    color: var(--kd-texto-3);
     margin-bottom: 3px;
 }
 
@@ -158,7 +349,7 @@ a:hover { color: var(--kd-clinico-alt); }
 }
 .kd-cifra .rotulo {
     font-size: .78rem;
-    color: #6C7C88;
+    color: var(--kd-texto-2);
     margin-top: 6px;
     text-transform: uppercase;
     letter-spacing: .06em;
@@ -172,7 +363,7 @@ a:hover { color: var(--kd-clinico-alt); }
     width: 38px; height: 38px;
     flex: 0 0 38px;
     border-radius: 50%;
-    background: #E3EDF1;
+    background: var(--kd-clinico-suave);
     color: var(--kd-clinico);
     display: flex; align-items: center; justify-content: center;
     font-family: "IBM Plex Mono", monospace;
@@ -189,28 +380,30 @@ a:hover { color: var(--kd-clinico-alt); }
     font-size: .68rem;
     letter-spacing: .1em;
     text-transform: uppercase;
-    color: #7A8A95;
+    color: var(--kd-texto-3);
     font-weight: 500;
     border-bottom: 1px solid var(--kd-mineral);
 }
-.table tbody tr { border-bottom: 1px solid #EDF2F4; }
+.table tbody tr { border-bottom: 1px solid var(--kd-linea-suave); }
 .table tbody tr:last-child { border-bottom: none; }
-.table-hover tbody tr:hover { background: #F6FAFB; }
+.table-hover tbody tr:hover { background: var(--kd-hover); }
 
 /* ---------- Botones ---------- */
 .btn { border-radius: 8px; font-weight: 500; }
 .btn-primary {
-    background: var(--kd-clinico);
-    border-color: var(--kd-clinico);
+    background: var(--kd-accion);
+    border-color: var(--kd-accion);
+    color: #fff;
 }
 .btn-primary:hover, .btn-primary:focus {
-    background: var(--kd-clinico-alt);
-    border-color: var(--kd-clinico-alt);
+    background: var(--kd-accion-alt);
+    border-color: var(--kd-accion-alt);
+    color: #fff;
 }
 .btn-outline-secondary {
-    color: var(--kd-tinta-suave);
+    color: var(--kd-texto);
     border-color: var(--kd-mineral);
-    background: #fff;
+    background: var(--kd-esmalte);
 }
 .btn-outline-secondary:hover {
     background: var(--kd-tinta);
@@ -237,9 +430,9 @@ a:hover { color: var(--kd-clinico-alt); }
     border-radius: 50%;
     background: currentColor;
 }
-.estado-pendiente  { background: #FDF3E3; color: #8A6212; }
-.estado-completada { background: #E6F4EF; color: var(--kd-verde); }
-.estado-cancelada  { background: #FBEAEA; color: var(--kd-lesion); }
+.estado-pendiente  { background: var(--kd-fondo-espera); color: var(--kd-texto-espera); }
+.estado-completada { background: var(--kd-fondo-ok); color: var(--kd-verde); }
+.estado-cancelada  { background: var(--kd-fondo-alerta); color: var(--kd-lesion); }
 
 /* ---------- Formularios ---------- */
 .form-label {
@@ -247,7 +440,7 @@ a:hover { color: var(--kd-clinico-alt); }
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: .05em;
-    color: #5C6D79;
+    color: var(--kd-texto-2);
     margin-bottom: 5px;
 }
 .form-control, .form-select {
@@ -266,21 +459,22 @@ a:hover { color: var(--kd-clinico-alt); }
     border-color: var(--kd-clinico);
     box-shadow: 0 0 0 3px rgba(27, 110, 140, .13);
 }
-.form-text { font-size: .78rem; color: #7A8A95; }
+.form-text { font-size: .78rem; color: var(--kd-texto-3); }
 
 /* ---------- Estado vacío ---------- */
 .kd-vacio {
     text-align: center;
     padding: 44px 20px;
-    color: #7A8A95;
+    color: var(--kd-texto-3);
 }
-.kd-vacio strong { display: block; color: var(--kd-tinta); margin-bottom: 5px; }
+.kd-vacio strong { display: block; color: var(--kd-texto); margin-bottom: 5px; }
 
 /* =====================================================================
    ODONTOGRAMA
    ===================================================================== */
 .kd-odontograma {
-    background: var(--kd-esmalte);
+    background: var(--kd-papel);
+    color: var(--kd-papel-texto);
     border-radius: var(--kd-radio);
     overflow-x: auto;      /* en móvil se desplaza en horizontal, no se deforma */
     padding: 6px 0;
@@ -288,7 +482,7 @@ a:hover { color: var(--kd-clinico-alt); }
 .kd-odontograma svg { display: block; min-width: 660px; margin: 0 auto; }
 
 /* Fondo tenue de cada arcada, detrás de todo el diagrama */
-.kd-banda-arcada { fill: #F7FAFB; }
+.kd-banda-arcada { fill: var(--kd-papel-2); }
 
 /* Cada diente es un <g> con clase .diente: silueta anatómica + 5 caras clickeables */
 .diente { cursor: pointer; }
@@ -310,22 +504,22 @@ a:hover { color: var(--kd-clinico-alt); }
 .diente:hover .silueta-raiz { stroke: var(--kd-clinico); }
 .diente:hover .numero-pieza { fill: var(--kd-clinico); }
 /* ...y el sector concreto que se va a pintar, para no marcar la cara equivocada */
-.diente .cara-diente:hover { stroke: var(--kd-tinta); stroke-width: 1.8; }
+.diente .cara-diente:hover { stroke: var(--kd-papel-texto); stroke-width: 1.8; }
 
 .diente:focus { outline: none; }
 .diente:focus-visible .borde-diente {
-    stroke: var(--kd-tinta);
+    stroke: var(--kd-papel-texto);
     stroke-width: 2.6;
 }
 .diente .numero-pieza {
     font-family: "IBM Plex Mono", monospace;
     font-size: 11px;
-    fill: #7A8A95;
+    fill: var(--kd-texto-3);
     text-anchor: middle;
     user-select: none;
     transition: fill .12s;
 }
-.diente.marcado .numero-pieza { fill: var(--kd-tinta); font-weight: 600; }
+.diente.marcado .numero-pieza { fill: var(--kd-papel-texto); font-weight: 600; }
 
 /* Silueta anatómica decorativa: solo referencia visual, no es clickeable.
    Refleja el mismo estado que el cuadro de caras (ver data-pieza en el JS). */
@@ -341,7 +535,7 @@ a:hover { color: var(--kd-clinico-alt); }
 /* Ausente: no queda nada de la pieza — corona y raíz se apagan por igual. */
 .diente-silueta[data-estado="ausente"] .silueta-corona,
 .diente-silueta[data-estado="ausente"] .silueta-raiz {
-    fill: #E7ECEF;
+    fill: var(--kd-apagado);
     stroke-dasharray: 3 2;
     opacity: .5;
 }
@@ -349,7 +543,7 @@ a:hover { color: var(--kd-clinico-alt); }
 /* Remanente radicular: la corona está destruida (se apaga), pero la raíz
    sigue en el hueso — se resalta en el mismo color que el cuadro de caras. */
 .diente-silueta[data-estado="remanente_radicular"] .silueta-corona {
-    fill: #E7ECEF;
+    fill: var(--kd-apagado);
     stroke-dasharray: 2 2;
     opacity: .35;
 }
@@ -371,22 +565,22 @@ a:hover { color: var(--kd-clinico-alt); }
 }
 
 /* La X de pieza ausente se dibuja encima del cuadro de caras */
-.diente .marca-ausente { stroke: #5A6B76; stroke-width: 2; display: none; }
+.diente .marca-ausente { stroke: var(--kd-texto-2); stroke-width: 2; display: none; }
 .diente[data-estado="ausente"] .marca-ausente { display: block; }
-.diente[data-estado="ausente"] .cara-diente { fill: #E7ECEF; }
+.diente[data-estado="ausente"] .cara-diente { fill: var(--kd-apagado); }
 
 /* Marca de perno: mango + cabeza redondeada, independiente del estado de la pieza */
 .diente .marca-perno { display: none; }
 .diente[data-perno="true"] .marca-perno { display: block; }
-.diente .perno-mango { stroke: var(--kd-tinta); stroke-width: 1.6; }
-.diente .perno-cabeza { fill: var(--kd-tinta); }
+.diente .perno-mango { stroke: var(--kd-papel-texto); stroke-width: 1.6; }
+.diente .perno-cabeza { fill: var(--kd-papel-texto); }
 
 .kd-cuadrante-rotulo {
     font-family: "IBM Plex Mono", monospace;
     font-size: 9.5px;
     font-weight: 500;
     letter-spacing: .1em;
-    fill: #9AAAB5;
+    fill: var(--kd-texto-3);
     text-anchor: middle;
     user-select: none;
 }
@@ -414,7 +608,7 @@ a:hover { color: var(--kd-clinico-alt); }
     font-size: .6rem;
     letter-spacing: .14em;
     text-transform: uppercase;
-    color: #8A97A0;
+    color: var(--kd-texto-3);
 }
 @media (max-width: 767px) {
     .kd-pincel-grupo + .kd-pincel-grupo { border-left: 0; padding-left: 0; }
@@ -426,7 +620,7 @@ a:hover { color: var(--kd-clinico-alt); }
     align-items: center;
     gap: 6px;
     border: 1.5px solid var(--kd-mineral);
-    background: #fff;
+    background: var(--kd-esmalte);
     border-radius: 999px;
     padding: 5px 12px 5px 7px;
     font-size: .8rem;
@@ -436,8 +630,8 @@ a:hover { color: var(--kd-clinico-alt); }
 }
 .kd-pincel:hover { border-color: #A9BAC4; }
 .kd-pincel.activo {
-    border-color: var(--kd-tinta);
-    box-shadow: 0 0 0 3px rgba(22, 35, 46, .09);
+    border-color: var(--kd-texto);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--kd-texto) 14%, transparent);
 }
 .kd-pincel .muestra {
     width: 14px; height: 14px;
@@ -446,11 +640,11 @@ a:hover { color: var(--kd-clinico-alt); }
 }
 
 /* Línea de ayuda breve bajo una barra de herramientas */
-.kd-pista { font-size: .8rem; color: #6C7C88; }
+.kd-pista { font-size: .8rem; color: var(--kd-texto-2); }
 
 /* Muestra del pincel de perno: una línea vertical, no un color de estado */
 .kd-muestra-perno {
-    background: #fff;
+    background: var(--kd-esmalte);
     position: relative;
 }
 .kd-muestra-perno::after {
@@ -473,7 +667,7 @@ a:hover { color: var(--kd-clinico-alt); }
 .kd-firma-caja {
     border: 1.5px dashed var(--kd-mineral);
     border-radius: var(--kd-radio);
-    background: #FBFCFD;
+    background: var(--kd-suave);
     touch-action: none;
 }
 .kd-firma-caja canvas { display: block; width: 100%; height: 220px; cursor: crosshair; }
@@ -485,16 +679,18 @@ a:hover { color: var(--kd-clinico-alt); }
 }
 .kd-tabs-paciente .nav-link {
     text-align: left;
-    color: var(--kd-tinta-suave);
+    color: var(--kd-texto-2);
     font-size: .86rem;
     font-weight: 500;
     border-radius: 8px;
     padding: 9px 12px;
     margin-bottom: 2px;
 }
-.kd-tabs-paciente .nav-link:hover { background: var(--kd-porcelana); }
+.kd-tabs-paciente .nav-link:hover { background: var(--kd-hover); color: var(--kd-texto); }
+/* Azul fijo, no el token: en tema oscuro el azul se aclara y el blanco
+   encima perdería contraste. */
 .kd-tabs-paciente .nav-link.active {
-    background: var(--kd-clinico);
+    background: #1B6E8C;
     color: #fff;
 }
 @media (max-width: 991px) {
@@ -505,16 +701,24 @@ a:hover { color: var(--kd-clinico-alt); }
    PERIODONTOGRAMA — carta clínica: una columna por pieza, con los dientes
    dibujados dentro de la misma cuadrícula que sus mediciones.
    ===================================================================== */
-.kd-pg-scroll { overflow-x: auto; padding-bottom: 4px; }
+.kd-pg-scroll {
+    overflow-x: auto;
+    padding-bottom: 4px;
+    /* Mismo criterio que el odontograma: papel claro en los dos temas. */
+    background: var(--kd-papel);
+    color: var(--kd-papel-texto);
+    border-radius: var(--kd-radio);
+}
+.kd-pg-tabla { color: var(--kd-papel-texto); }
 .kd-pg-tabla { border-collapse: collapse; min-width: max-content; }
 
 .kd-pg-rotulo {
     position: sticky; left: 0; z-index: 2;
-    background: var(--kd-esmalte);
+    background: var(--kd-papel);
     padding: 1px 10px 1px 0;
     text-align: right; white-space: nowrap;
     font-size: .58rem; font-weight: 600; letter-spacing: .03em;
-    text-transform: uppercase; color: #7A8A95;
+    text-transform: uppercase; color: var(--kd-texto-3);
 }
 .kd-pg-rotulo-cara { color: var(--kd-clinico); }
 
@@ -537,7 +741,7 @@ a:hover { color: var(--kd-clinico-alt); }
 .kd-pg-mini, .kd-pg-caja {
     height: 17px; padding: 0;
     border: 1px solid var(--kd-mineral); border-radius: 2px;
-    background: #fff; color: var(--kd-tinta);
+    background: var(--kd-papel); color: var(--kd-papel-texto);
     font: 9px "IBM Plex Mono", monospace; text-align: center;
 }
 .kd-pg-mini { width: 17px; }
@@ -554,14 +758,14 @@ a:hover { color: var(--kd-clinico-alt); }
 .kd-pg-tog span {
     display: block; width: 15px; height: 15px;
     border: 1px solid var(--kd-mineral); border-radius: 2px;
-    background: #EDF1F3;
+    background: var(--kd-apagado);
     transition: background .1s, border-color .1s;
 }
 .kd-pg-tog-sangrado input:checked + span   { background: var(--kd-lesion); border-color: var(--kd-lesion); }
 .kd-pg-tog-placa input:checked + span      { background: var(--kd-clinico); border-color: var(--kd-clinico); }
 .kd-pg-tog-supuracion input:checked + span { background: #C9A227; border-color: #C9A227; }
 .kd-pg-tog-marca span { background: #fff; }
-.kd-pg-tog-marca input:checked + span      { background: var(--kd-tinta); border-color: var(--kd-tinta); }
+.kd-pg-tog-marca input:checked + span      { background: var(--kd-papel-texto); border-color: var(--kd-papel-texto); }
 
 /* Dientes dibujados sobre papel milimetrado */
 .kd-pg-celda-diente { padding: 0; }
@@ -570,12 +774,12 @@ a:hover { color: var(--kd-clinico-alt); }
 }
 .kd-pg-diente { display: block; width: 100%; height: 76px; }
 
-.kd-pg-medias { display: flex; flex-wrap: wrap; gap: 18px; font-size: .74rem; color: #6C7C88; }
+.kd-pg-medias { display: flex; flex-wrap: wrap; gap: 18px; font-size: .74rem; color: var(--kd-texto-2); }
 .kd-pg-indices { display: flex; flex-wrap: wrap; gap: 14px; font-size: .74rem; font-weight: 600; }
 .kd-pg-idx-placa { color: var(--kd-clinico); }
 .kd-pg-idx-sangrado { color: var(--kd-lesion); }
 
-.kd-pg-leyenda { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-size: .7rem; color: #6C7C88; }
+.kd-pg-leyenda { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-size: .7rem; color: var(--kd-texto-2); }
 .kd-pg-leyenda span { display: inline-flex; align-items: center; gap: 5px; }
 .kd-pg-muestra { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
 .kd-pg-muestra-sangrado   { background: var(--kd-lesion); }
@@ -586,8 +790,8 @@ a:hover { color: var(--kd-clinico-alt); }
 
 /* Calendario mensual de citas */
 .kd-calendario td { width: 14.28%; height: 108px; vertical-align: top; padding: 6px; }
-.kd-calendario .kd-dia-fuera { background: #FAFBFC; color: #B7C2C9; }
-.kd-calendario .kd-dia-hoy { background: #EAF4F8; }
+.kd-calendario .kd-dia-fuera { background: var(--kd-suave); color: var(--kd-texto-3); }
+.kd-calendario .kd-dia-hoy { background: var(--kd-clinico-suave); }
 .kd-dia-numero { font-family: "IBM Plex Mono", monospace; font-size: .78rem; margin-bottom: 4px; }
 .kd-dia-cita {
     display: block;
@@ -601,9 +805,9 @@ a:hover { color: var(--kd-clinico-alt); }
     text-overflow: ellipsis;
     color: inherit;
 }
-.kd-dia-cita.estado-pendiente  { background: #FDF3E3; color: #8A6212; }
-.kd-dia-cita.estado-completada { background: #E6F4EF; color: var(--kd-verde); }
-.kd-dia-cita.estado-cancelada  { background: #FBEAEA; color: var(--kd-lesion); text-decoration: line-through; }
+.kd-dia-cita.estado-pendiente  { background: var(--kd-fondo-espera); color: var(--kd-texto-espera); }
+.kd-dia-cita.estado-completada { background: var(--kd-fondo-ok); color: var(--kd-verde); }
+.kd-dia-cita.estado-cancelada  { background: var(--kd-fondo-alerta); color: var(--kd-lesion); text-decoration: line-through; }
 
 .kd-guardado {
     font-size: .78rem;
@@ -652,7 +856,7 @@ a:hover { color: var(--kd-clinico-alt); }
     left: -25px; top: 6px;
     width: 11px; height: 11px;
     border-radius: 50%;
-    background: #fff;
+    background: var(--kd-esmalte);
     border: 2.5px solid var(--kd-clinico);
 }
 
@@ -783,14 +987,14 @@ a:hover { color: var(--kd-clinico-alt); }
     display: block;
     font-family: "IBM Plex Mono", monospace;
     font-size: .58rem; letter-spacing: .16em; text-transform: uppercase;
-    color: #8A97A0;
+    color: var(--kd-texto-3);
 }
-.kd-acceso-pie { margin-top: 14px; font-size: .78rem; color: #8A97A0; text-align: center; }
+.kd-acceso-pie { margin-top: 14px; font-size: .78rem; color: var(--kd-texto-3); text-align: center; }
 .kd-acceso-icono {
     width: 46px; height: 46px; margin: 0 auto 12px;
     display: flex; align-items: center; justify-content: center;
     border-radius: 50%;
-    background: #FBEAEA; color: var(--kd-lesion);
+    background: var(--kd-fondo-alerta); color: var(--kd-lesion);
 }
 
 /* Ficha del usuario al pie de la barra lateral */
@@ -806,7 +1010,7 @@ a:hover { color: var(--kd-clinico-alt); }
     flex: 0 0 30px; width: 30px; height: 30px;
     display: flex; align-items: center; justify-content: center;
     border-radius: 50%;
-    background: var(--kd-clinico); color: #fff;
+    background: #1B6E8C; color: #fff;
     font-family: "IBM Plex Mono", monospace; font-size: .7rem; font-weight: 600;
 }
 .kd-cuenta-datos { min-width: 0; }
@@ -840,19 +1044,19 @@ a:hover { color: var(--kd-clinico-alt); }
     display: inline-flex; align-items: center;
     padding: 4px 12px; border-radius: 999px;
     border: 1.5px solid var(--kd-mineral);
-    background: #fff; color: #8A97A0;
+    background: var(--kd-esmalte); color: var(--kd-texto-3);
     font-size: .78rem; font-weight: 500;
 }
 .kd-modulo.activo {
     border-color: var(--kd-clinico);
-    background: #EAF3F6; color: var(--kd-clinico-alt);
+    background: var(--kd-clinico-suave); color: var(--kd-clinico-alt);
 }
 
 /* Fila de usuario en el panel de administración */
 .kd-usuario-fila {
     display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
     padding: 12px; border: 1px solid var(--kd-mineral); border-radius: var(--kd-radio);
-    background: #FCFDFE;
+    background: var(--kd-suave);
 }
 .kd-usuario-fila .form-label { font-size: .64rem; margin-bottom: 3px; }
 .kd-usuario-acciones { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
@@ -883,7 +1087,7 @@ a:hover { color: var(--kd-clinico-alt); }
 .kd-acceso-marca small {
     font-family: "IBM Plex Mono", monospace;
     font-size: .6rem; letter-spacing: .14em; text-transform: uppercase;
-    color: #8A97A0;
+    color: var(--kd-texto-3);
 }
 
 /* Vista previa del logo en el panel de administración */
@@ -892,7 +1096,7 @@ a:hover { color: var(--kd-clinico-alt); }
     width: 72px; height: 72px;
     display: flex; align-items: center; justify-content: center;
     border: 1px solid var(--kd-mineral); border-radius: var(--kd-radio);
-    background: #fff; overflow: hidden;
+    background: var(--kd-esmalte); overflow: hidden;
 }
 .kd-logo-previa img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .kd-logo-previa span {
@@ -923,7 +1127,7 @@ a:hover { color: var(--kd-clinico-alt); }
 .kd-barra small {
     margin-top: 5px;
     font-family: "IBM Plex Mono", monospace;
-    font-size: .62rem; color: #8A97A0;
+    font-size: .62rem; color: var(--kd-texto-3);
 }
 
 .kd-ranking-fila + .kd-ranking-fila { margin-top: 10px; }
@@ -939,11 +1143,58 @@ a:hover { color: var(--kd-clinico-alt); }
 .kd-reporte {
     padding: 12px;
     border: 1px solid var(--kd-mineral); border-radius: var(--kd-radio);
-    background: #FCFDFE;
+    background: var(--kd-suave);
 }
 .kd-reporte-respuesta {
     margin-top: 8px; padding: 8px 10px;
     border-left: 3px solid var(--kd-clinico);
-    background: #F1F7F9; border-radius: 0 6px 6px 0;
+    background: var(--kd-clinico-suave); border-radius: 0 6px 6px 0;
     font-size: .82rem;
 }
+
+/* =====================================================================
+   CAMBIO DE TEMA
+   ===================================================================== */
+.kd-tema {
+    display: flex; align-items: center; gap: 9px;
+    width: 100%;
+    margin-bottom: 10px; padding: 7px 6px;
+    border: 0; border-radius: 8px;
+    background: none; color: #8FA3B0;
+    font: 500 .76rem/1 "Instrument Sans", system-ui, sans-serif;
+    text-align: left; cursor: pointer;
+    transition: background .15s, color .15s;
+}
+.kd-tema:hover { background: rgba(255,255,255,.07); color: #fff; }
+.kd-tema-icono {
+    flex: 0 0 26px; width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 7px;
+    background: rgba(255,255,255,.07);
+}
+/* Se muestra el icono del tema al que se VA a cambiar, no el actual */
+.kd-icono-luna { display: block; }
+.kd-icono-sol  { display: none; }
+:root[data-theme="dark"] .kd-icono-luna { display: none; }
+:root[data-theme="dark"] .kd-icono-sol  { display: block; }
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .kd-icono-luna { display: none; }
+    :root:not([data-theme="light"]) .kd-icono-sol  { display: block; }
+}
+
+/* =====================================================================
+   AVISOS EN CABECERA DE TARJETA
+   Antes iban con style="" en la plantilla y por eso no cambiaban de tema.
+   ===================================================================== */
+.kd-aviso-alerta {
+    background: var(--kd-fondo-alerta);
+    color: var(--kd-lesion);
+    border-color: var(--kd-borde-alerta) !important;
+}
+.kd-aviso-ok {
+    background: var(--kd-fondo-ok);
+    color: var(--kd-verde);
+    border-color: var(--kd-borde-ok) !important;
+}
+.kd-borde-alerta { border-color: var(--kd-borde-alerta) !important; }
+.kd-texto-espera { color: var(--kd-texto-espera); }
