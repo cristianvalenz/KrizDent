@@ -127,8 +127,12 @@
           <div class="col-md-6">
             <label class="form-label" for="u-usuario">Usuario</label>
             <input class="form-control" id="u-usuario" name="usuario"
+                   data-prefijo="{{ clinica.slug }}"
                    autocapitalize="none" spellcheck="false" required>
-            <div class="form-text">Con esto entra al sistema.</div>
+            <div class="form-text">
+              Con esto entra al sistema. Se propone uno al escribir el nombre,
+              pero puedes poner el que quieras — por ejemplo el de una sede.
+            </div>
           </div>
           <div class="col-12">
             <label class="form-label" for="u-email">Correo</label>
@@ -250,4 +254,35 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Propone un nombre de usuario a partir del nombre de la persona, SIN imponerlo:
+// apenas el administrador escribe algo suyo en el campo, deja de sugerir. Así
+// se puede usar el nombre de una sede, un cargo o lo que la clínica prefiera.
+(function () {
+    "use strict";
+    var nombre = document.getElementById("u-nombre");
+    var usuario = document.getElementById("u-usuario");
+    if (!nombre || !usuario) return;
+
+    var prefijo = usuario.dataset.prefijo || "";
+    var loEscribioElAdmin = false;
+
+    usuario.addEventListener("input", function () {
+        loEscribioElAdmin = true;
+    });
+
+    nombre.addEventListener("input", function () {
+        if (loEscribioElAdmin) return;
+        var limpio = nombre.value
+            .normalize("NFD").replace(/[̀-ͯ]/g, "")   // quita tildes
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "_")
+            .replace(/^_+|_+$/g, "");
+        usuario.value = limpio ? (prefijo ? prefijo + "_" + limpio : limpio) : "";
+    });
+})();
+</script>
 {% endblock %}

@@ -45,15 +45,26 @@ def _modulos_del_form() -> list:
     return [m for m in request.form.getlist("modulos") if m in MODULOS]
 
 
+def _usuario_libre(acceso: str, excluir_id=None) -> bool:
+    consulta = sb.table("usuarios").select("id").ilike("usuario", acceso)
+    if excluir_id:
+        consulta = consulta.neq("id", excluir_id)
+    return not consulta.limit(1).execute().data
+
+
 def _ocupado(acceso: str, email, excluir_id=None):
     """
     Devuelve el mensaje de choque, o None si usuario y correo están libres.
     El usuario se compara sin distinguir mayúsculas, igual que al entrar.
     """
-    consulta = sb.table("usuarios").select("id").ilike("usuario", acceso)
-    if excluir_id:
-        consulta = consulta.neq("id", excluir_id)
-    if consulta.limit(1).execute().data:
+    if not _usuario_libre(acceso, excluir_id):
+        # El usuario es libre a propósito (puede ser un cargo, una sede...),
+        # así que en vez de imponer un formato se propone el siguiente libre.
+        for n in range(2, 12):
+            alternativa = f"{acceso}{n}"
+            if _usuario_libre(alternativa, excluir_id):
+                return (f"Ya existe una cuenta con el usuario «{acceso}». "
+                        f"Puedes usar «{alternativa}» u otro que prefieras.")
         return f"Ya existe una cuenta con el usuario «{acceso}»."
 
     if email:
