@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Grafo de conocimiento generado por graphify: 2 MB de datos derivados que se
+# rehacen con /graphify y cambian en cada corrida. Se regenera, no se versiona.
+graphify-out/
