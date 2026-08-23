@@ -861,19 +861,97 @@ a:hover { color: var(--kd-clinico-alt); }
 }
 
 /* ---------- Responsivo ---------- */
+/* ---------------------------------------------------------------------
+   En móvil la barra lateral se convierte en una cabecera: marca y cuenta
+   arriba, y debajo el menú que se desliza en horizontal.
+
+   El pie NO se oculta — ahí viven cerrar sesión, el tema y el acceso a la
+   cuenta, y sin él desde el celular no había forma de salir del sistema.
+   --------------------------------------------------------------------- */
 @media (max-width: 991.98px) {
     .kd-sidebar {
-        position: static;
+        position: sticky; top: 0;
+        display: flex; flex-wrap: wrap; align-items: center;
+        gap: 8px 10px;
         width: 100%;
         min-height: auto;
-        padding: 12px 14px;
+        padding: 10px 14px;
     }
-    .kd-sidebar-pie { display: none; }
-    .kd-nav { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px; }
-    .kd-nav a { white-space: nowrap; padding: 7px 12px; }
-    .kd-marca { padding-bottom: 12px; }
+    .kd-marca { order: 1; padding: 0; font-size: 1.05rem; }
+    .kd-marca-logo, .kd-marca-inicial { width: 28px; height: 28px; flex-basis: 28px; }
+
+    .kd-sidebar-pie {
+        order: 2;
+        position: static; inset: auto;
+        display: flex; align-items: center; gap: 6px;
+        margin-left: auto;
+        padding-top: 0;
+        border-top: 0;
+    }
+    .kd-tema {
+        width: auto; margin: 0; padding: 6px;
+    }
+    .kd-tema-texto { display: none; }         /* en móvil basta el icono */
+    .kd-cuenta { padding: 4px; gap: 7px; }
+    .kd-cuenta-datos small { display: none; } /* el nombre de la clínica ya está en la marca */
+    .kd-cuenta-datos strong { max-width: 14ch; }
+    .kd-salir {
+        width: auto; margin: 0;
+        padding: 7px 10px;
+        border: 1px solid rgba(255,255,255,.14);
+        border-radius: 8px;
+        white-space: nowrap;
+    }
+
+    .kd-nav {
+        order: 3;
+        display: flex; gap: 4px;
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+    }
+    .kd-nav::-webkit-scrollbar { display: none; }
+    .kd-nav a { white-space: nowrap; padding: 7px 12px; margin-bottom: 0; }
+
     .kd-contenido { margin-left: 0; padding: 18px 16px 50px; }
     .kd-encabezado h1 { font-size: 1.25rem; }
+}
+
+/* Pantalla angosta: solo la inicial de la cuenta, sin el nombre */
+@media (max-width: 560px) {
+    .kd-cuenta-datos { display: none; }
+    .kd-marca span small { display: none; }
+    .kd-salir { padding: 8px 10px; font-size: .7rem; }
+}
+
+/* ---------------------------------------------------------------------
+   Objetivos táctiles. En escritorio un botón de 31px se hace clic sin
+   problema; con el dedo, no. Se agrandan solo en pantallas táctiles y se
+   deja fuera la carta periodontal, cuya cuadrícula de casillas diminutas
+   dejaría de caber si se agrandara.
+   --------------------------------------------------------------------- */
+@media (max-width: 991.98px) {
+    .btn-sm, .btn {
+        min-height: 40px;
+        display: inline-flex; align-items: center; justify-content: center;
+    }
+    .kd-salir, .kd-tema { min-height: 38px; }
+    .kd-cuenta { min-height: 38px; }
+    .nav-link { min-height: 40px; display: flex; align-items: center; }
+
+    /* Casillas y radios: 15px es imposible de acertar con el dedo */
+    .form-check-input:not(.kd-pg-scroll *) { width: 20px; height: 20px; margin-top: .15em; }
+    .kd-check input:not(.kd-pg-scroll *) { width: 19px; height: 19px; }
+    .kd-pincel { min-height: 38px; }
+
+    /* El campo no debe medir menos de 16px o iOS hace zoom al enfocarlo */
+    .form-control, .form-select { font-size: 16px; }
+    .kd-pg-mini, .kd-pg-caja { font-size: 9px; }   /* la carta sigue igual */
+
+    /* Cabecera un poco más compacta: es fija y no debe comerse la pantalla */
+    .kd-sidebar { padding: 8px 12px; gap: 6px 8px; }
+    .kd-nav a { padding: 8px 11px; }
 }
 
 /* Respeta la preferencia del sistema de reducir animaciones */
