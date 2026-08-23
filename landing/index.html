@@ -272,9 +272,37 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
 }
 .marco-pestana:hover { color: var(--clinico); }
 .marco-pestana.activa { background: var(--clinico); color: #fff; }
-.marco-panel[hidden] { display: none; }
-.leyenda[hidden] { display: none; }
+
+/* Barra que muestra cuánto falta para el cambio automático. Desaparece en
+   cuanto el visitante toca una pestaña: ahí manda él, no el temporizador. */
+.marco-pestana::after {
+    content: "";
+    display: block;
+    height: 2px; margin-top: 4px;
+    border-radius: 2px;
+    background: currentColor;
+    transform: scaleX(0); transform-origin: left;
+    opacity: .45;
+}
+.marco-pestana.activa.contando::after {
+    transform: scaleX(1);
+    transition: transform var(--giro, 5s) linear;
+}
+.marco-pestanas.manual .marco-pestana::after { display: none; }
+
+/* Las dos cartas viven en la misma celda: el fundido no mueve el diseño */
+.marco-cuerpo, .marco-leyendas { display: grid; }
+.marco-panel, .marco-leyendas .leyenda { grid-area: 1 / 1; }
+.marco-panel, .leyenda { transition: opacity .5s ease; }
+.marco-panel[aria-hidden="true"],
+.leyenda[aria-hidden="true"] { opacity: 0; pointer-events: none; }
+
 .leyenda i.muestra-linea { height: 3px; border-radius: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+    .marco-panel, .leyenda { transition: none; }
+    .marco-pestana::after { display: none; }
+}
 
 @media (max-width: 420px) {
     .marco-pestana { padding: 5px 8px; font-size: .68rem; }
@@ -486,28 +514,32 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
         </div>
       </div>
 
+      {# Las dos cartas se superponen en la misma celda para que el fundido no
+         mueva nada de sitio; se ocultan con opacidad, no con display. #}
       <div class="marco-cuerpo">
         <div class="marco-panel" id="panel-odonto" role="tabpanel">
           <svg id="odontograma" viewBox="0 0 640 290" role="img"
                aria-label="Odontograma de 32 piezas con hallazgos marcados por cara"></svg>
         </div>
-        <div class="marco-panel" id="panel-perio" role="tabpanel" hidden>
+        <div class="marco-panel" id="panel-perio" role="tabpanel" aria-hidden="true">
           <svg id="perio-heroe" viewBox="0 0 640 290" role="img"
                aria-label="Carta periodontal con profundidad de sondaje por cara"></svg>
         </div>
       </div>
 
-      <div class="leyenda" id="leyenda-odonto">
-        <span><i style="background:#D64545"></i> Caries</span>
-        <span><i style="background:#1B6E8C"></i> Obturado</span>
-        <span><i style="background:#E08E3C"></i> En mal estado</span>
-        <span><i style="background:#8A97A0"></i> Ausente</span>
-      </div>
-      <div class="leyenda" id="leyenda-perio" hidden>
-        <span><i style="background:#D64545"></i> Sangrado</span>
-        <span><i style="background:#1B6E8C"></i> Placa</span>
-        <span><i class="muestra-linea" style="background:#D64545"></i> Fondo de bolsa</span>
-        <span><i class="muestra-linea" style="background:#8A97A0"></i> Línea amelocementaria</span>
+      <div class="marco-leyendas">
+        <div class="leyenda" id="leyenda-odonto">
+          <span><i style="background:#D64545"></i> Caries</span>
+          <span><i style="background:#1B6E8C"></i> Obturado</span>
+          <span><i style="background:#E08E3C"></i> En mal estado</span>
+          <span><i style="background:#8A97A0"></i> Ausente</span>
+        </div>
+        <div class="leyenda" id="leyenda-perio" aria-hidden="true">
+          <span><i style="background:#D64545"></i> Sangrado</span>
+          <span><i style="background:#1B6E8C"></i> Placa</span>
+          <span><i class="muestra-linea" style="background:#D64545"></i> Fondo de bolsa</span>
+          <span><i class="muestra-linea" style="background:#8A97A0"></i> Línea amelocementaria</span>
+        </div>
       </div>
     </div>
   </div>
@@ -1263,25 +1295,99 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
         });
     }
 
-    /* --- 3. Pestañas del marco: odontograma / periodontograma --- */
+    /* --- 3. Pestañas del marco: odontograma / periodontograma ---
+       Alternan solas para que se vea que son dos cartas distintas, pero el
+       clic corta la rotación para siempre: si alguien eligió una carta y se
+       le cambia sola a los pocos segundos, la página le está peleando. */
+    var GIRO = 5000;   // ms por carta: menos no alcanza para leer 32 piezas
+
+    var barra = document.querySelector(".marco-pestanas");
     var pestanas = document.querySelectorAll(".marco-pestana");
-    if (pestanas.length) {
+    if (barra && pestanas.length) {
         var leyendas = {
             "panel-odonto": document.getElementById("leyenda-odonto"),
             "panel-perio": document.getElementById("leyenda-perio")
         };
-        pestanas.forEach(function (btn) {
-            btn.addEventListener("click", function () {
-                pestanas.forEach(function (otro) {
-                    var activo = otro === btn;
-                    otro.classList.toggle("activa", activo);
-                    otro.setAttribute("aria-selected", activo ? "true" : "false");
-                    var panel = document.getElementById(otro.dataset.panel);
-                    if (panel) panel.hidden = !activo;
-                    var ley = leyendas[otro.dataset.panel];
-                    if (ley) ley.hidden = !activo;
-                });
+        var quietud = window.matchMedia("(prefers-reduced-motion: reduce)");
+        var indice = 0, reloj = null, manual = quietud.matches, pausado = false;
+
+        barra.style.setProperty("--giro", GIRO + "ms");
+
+        function mostrar(n) {
+            indice = n;
+            pestanas.forEach(function (btn, i) {
+                var activo = i === n;
+                btn.classList.toggle("activa", activo);
+                btn.setAttribute("aria-selected", activo ? "true" : "false");
+                var panel = document.getElementById(btn.dataset.panel);
+                if (panel) panel.setAttribute("aria-hidden", activo ? "false" : "true");
+                var ley = leyendas[btn.dataset.panel];
+                if (ley) ley.setAttribute("aria-hidden", activo ? "false" : "true");
             });
+            reiniciarBarra();
+        }
+
+        function reiniciarBarra() {
+            if (manual) return;
+            var activa = pestanas[indice];
+            activa.classList.remove("contando");
+            void activa.offsetWidth;                 // fuerza el reinicio de la animación
+            if (!pausado) activa.classList.add("contando");
+        }
+
+        function arrancar() {
+            if (manual || reloj) return;
+            reloj = setInterval(function () {
+                if (!pausado) mostrar((indice + 1) % pestanas.length);
+            }, GIRO);
+            reiniciarBarra();
+        }
+
+        function detener() {
+            manual = true;
+            clearInterval(reloj);
+            reloj = null;
+            barra.classList.add("manual");
+        }
+
+        pestanas.forEach(function (btn, i) {
+            btn.addEventListener("click", function () {
+                detener();          // el visitante toma el mando
+                mostrar(i);
+            });
+        });
+
+        // Mientras el mouse está encima se está mirando: no cambiar debajo.
+        var marco = barra.closest(".marco");
+        ["mouseenter", "focusin"].forEach(function (ev) {
+            marco.addEventListener(ev, function () {
+                pausado = true;
+                pestanas[indice].classList.remove("contando");
+            });
+        });
+        ["mouseleave", "focusout"].forEach(function (ev) {
+            marco.addEventListener(ev, function () { pausado = false; reiniciarBarra(); });
+        });
+
+        mostrar(0);
+        arrancar();
+
+        // El observador solo PAUSA cuando el marco sale de pantalla; arrancar
+        // desde él dejaría la rotación muerta en cualquier navegador donde no
+        // llegue a dispararse.
+        if ("IntersectionObserver" in window) {
+            new IntersectionObserver(function (entradas) {
+                entradas.forEach(function (e) {
+                    pausado = !e.isIntersecting;
+                    reiniciarBarra();
+                });
+            }, {threshold: .2}).observe(marco);
+        }
+
+        // Tampoco gastar turnos con la pestaña del navegador en segundo plano
+        document.addEventListener("visibilitychange", function () {
+            pausado = document.hidden;
+            reiniciarBarra();
         });
     }
 
