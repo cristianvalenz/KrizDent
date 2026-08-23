@@ -7,7 +7,7 @@
     <p class="kd-eyebrow">Mi cuenta</p>
     <h1>{{ usuario.nombre }}</h1>
     <p class="subtitulo">
-      <span class="dato">{{ usuario.email }}</span>
+      <span class="dato">{{ usuario.usuario }}</span>
       {% if clinica_sesion %} · {{ clinica_sesion.nombre }}{% endif %}
     </p>
   </div>
@@ -17,10 +17,25 @@
   <div class="col-lg-6">
     <form method="post" class="card">
       <div class="card-header">Mis datos</div>
-      <div class="card-body">
-        <label class="form-label" for="nombre">Nombre</label>
-        <input class="form-control" id="nombre" name="nombre" value="{{ usuario.nombre }}" required>
-        <div class="form-text mt-1">El correo solo lo puede cambiar quien administra tu cuenta.</div>
+      <div class="card-body d-flex flex-column gap-2">
+        <div>
+          <label class="form-label" for="usuario">Usuario</label>
+          <input class="form-control dato" id="usuario" value="{{ usuario.usuario }}" disabled>
+          <div class="form-text mt-1">
+            Con esto entras al sistema. Para cambiarlo, pídeselo a quien administra tu cuenta.
+          </div>
+        </div>
+        <div>
+          <label class="form-label" for="nombre">Nombre</label>
+          <input class="form-control" id="nombre" name="nombre" value="{{ usuario.nombre }}" required>
+        </div>
+        <div>
+          <label class="form-label" for="email">Correo</label>
+          <input class="form-control" type="email" id="email" name="email" value="{{ usuario.email or '' }}">
+          <div class="form-text mt-1">
+            No sirve para entrar: se usa para recuperar tu contraseña y recibir avisos.
+          </div>
+        </div>
       </div>
       <div class="card-header border-top border-bottom-0 text-end">
         <input type="hidden" name="accion" value="datos">

@@ -56,23 +56,24 @@ def entrar():
     siguiente = _siguiente_seguro(request.args.get("siguiente", ""))
 
     if request.method == "POST":
-        email = (request.form.get("email") or "").strip().lower()
+        nombre_usuario = (request.form.get("usuario") or "").strip()
         clave = request.form.get("clave") or ""
 
-        filas = sb.table("usuarios").select("*").ilike("email", email).limit(1).execute().data
+        # ilike compara sin distinguir mayúsculas: "Admin" y "admin" entran igual.
+        filas = sb.table("usuarios").select("*").ilike("usuario", nombre_usuario).limit(1).execute().data
         usuario = filas[0] if filas else None
 
         # Mismo mensaje para usuario inexistente y clave mala: decir cuál de
-        # los dos falló le confirmaría a un atacante qué correos existen.
+        # los dos falló le confirmaría a un atacante qué cuentas existen.
         if not usuario or not usuario["activo"] or not clave_correcta(usuario, clave):
-            flash("Correo o contraseña incorrectos.", "danger")
-            return render_template("auth/entrar.html", email=email, siguiente=siguiente), 401
+            flash("Usuario o contraseña incorrectos.", "danger")
+            return render_template("auth/entrar.html", usuario=nombre_usuario, siguiente=siguiente), 401
 
         iniciar_sesion(usuario)
         destino = _siguiente_seguro(request.form.get("siguiente", ""))
         return redirect(destino or _destino_tras_entrar(usuario))
 
-    return render_template("auth/entrar.html", email="", siguiente=siguiente)
+    return render_template("auth/entrar.html", usuario="", siguiente=siguiente)
 
 
 @bp.route("/salir", methods=["POST", "GET"])
@@ -94,10 +95,21 @@ def perfil():
 
         if accion == "datos":
             nombre = (request.form.get("nombre") or "").strip()
+            email = (request.form.get("email") or "").strip().lower() or None
+
+            # El correo no sirve para entrar, pero sí para recuperar la clave
+            # y recibir avisos: por eso debe seguir siendo único.
+            ocupado = email and sb.table("usuarios").select("id").ilike("email", email) \
+                .neq("id", usuario["id"]).limit(1).execute().data
+
             if not nombre:
                 flash("El nombre no puede quedar vacío.", "danger")
+            elif ocupado:
+                flash(f"Otra cuenta ya usa el correo {email}.", "danger")
             else:
-                sb.table("usuarios").update({"nombre": nombre}).eq("id", usuario["id"]).execute()
+                sb.table("usuarios").update(
+                    {"nombre": nombre, "email": email}
+                ).eq("id", usuario["id"]).execute()
                 flash("Datos actualizados.", "success")
 
         elif accion == "clave":

@@ -44,6 +44,26 @@ def _modulos_del_form() -> list:
     return [m for m in request.form.getlist("modulos") if m in MODULOS]
 
 
+def _ocupado(acceso: str, email, excluir_id=None):
+    """
+    Devuelve el mensaje de choque, o None si usuario y correo están libres.
+    El usuario se compara sin distinguir mayúsculas, igual que al entrar.
+    """
+    consulta = sb.table("usuarios").select("id").ilike("usuario", acceso)
+    if excluir_id:
+        consulta = consulta.neq("id", excluir_id)
+    if consulta.limit(1).execute().data:
+        return f"Ya existe una cuenta con el usuario «{acceso}»."
+
+    if email:
+        consulta = sb.table("usuarios").select("id").ilike("email", email)
+        if excluir_id:
+            consulta = consulta.neq("id", excluir_id)
+        if consulta.limit(1).execute().data:
+            return f"Ya existe una cuenta con el correo {email}."
+    return None
+
+
 def _fecha_o_none(valor: str):
     valor = (valor or "").strip()
     return valor or None
@@ -169,13 +189,18 @@ def renovar(clinica_id):
 @requiere_superadmin
 def nuevo_usuario(clinica_id):
     nombre = (request.form.get("nombre") or "").strip()
-    email = (request.form.get("email") or "").strip().lower()
-    if not nombre or not email:
-        flash("Nombre y correo son obligatorios.", "danger")
+    acceso = (request.form.get("usuario") or "").strip()
+    # El correo es opcional: no sirve para entrar, solo para recuperar la
+    # clave y mandar avisos.
+    email = (request.form.get("email") or "").strip().lower() or None
+
+    if not nombre or not acceso:
+        flash("Nombre y usuario son obligatorios.", "danger")
         return redirect(url_for("admin.clinica", clinica_id=clinica_id))
 
-    if sb.table("usuarios").select("id").ilike("email", email).limit(1).execute().data:
-        flash(f"Ya existe una cuenta con el correo {email}.", "danger")
+    ocupado = _ocupado(acceso, email)
+    if ocupado:
+        flash(ocupado, "danger")
         return redirect(url_for("admin.clinica", clinica_id=clinica_id))
 
     rol = request.form.get("rol") if request.form.get("rol") in ("dueno", "usuario") else "usuario"
@@ -184,6 +209,7 @@ def nuevo_usuario(clinica_id):
     sb.table("usuarios").insert({
         "clinica_id": clinica_id,
         "nombre": nombre,
+        "usuario": acceso,
         "email": email,
         "password_hash": hashear(clave),
         "rol": rol,
@@ -192,39 +218,49 @@ def nuevo_usuario(clinica_id):
         "activo": True,
     }).execute()
 
-    flash(f"Usuario creado. Contraseña inicial: {clave}", "success")
+    flash(f"Usuario «{acceso}» creado. Contraseña inicial: {clave}", "success")
     return redirect(url_for("admin.clinica", clinica_id=clinica_id))
 
 
 @bp.route("/usuarios/<int:usuario_id>/guardar", methods=["POST"])
 @requiere_superadmin
 def guardar_usuario(usuario_id):
-    filas = sb.table("usuarios").select("clinica_id, rol").eq("id", usuario_id).limit(1).execute().data
+    filas = sb.table("usuarios").select("clinica_id, rol, usuario").eq("id", usuario_id).limit(1).execute().data
     if not filas:
         abort(404)
-    rol = request.form.get("rol") if request.form.get("rol") in ("dueno", "usuario") else filas[0]["rol"]
+    previo = filas[0]
+    rol = request.form.get("rol") if request.form.get("rol") in ("dueno", "usuario") else previo["rol"]
+    acceso = (request.form.get("usuario") or "").strip() or previo["usuario"]
+    email = (request.form.get("email") or "").strip().lower() or None
+
+    ocupado = _ocupado(acceso, email, excluir_id=usuario_id)
+    if ocupado:
+        flash(ocupado, "danger")
+        return redirect(url_for("admin.clinica", clinica_id=previo["clinica_id"]))
 
     sb.table("usuarios").update({
         "nombre": (request.form.get("nombre") or "").strip(),
+        "usuario": acceso,
+        "email": email,
         "rol": rol,
         "activo": request.form.get("activo") == "on",
         "modulos": list(MODULOS) if rol == "dueno" else _modulos_del_form(),
     }).eq("id", usuario_id).execute()
 
     flash("Usuario actualizado.", "success")
-    return redirect(url_for("admin.clinica", clinica_id=filas[0]["clinica_id"]))
+    return redirect(url_for("admin.clinica", clinica_id=previo["clinica_id"]))
 
 
 @bp.route("/usuarios/<int:usuario_id>/clave", methods=["POST"])
 @requiere_superadmin
 def reiniciar_clave(usuario_id):
-    filas = sb.table("usuarios").select("clinica_id, email").eq("id", usuario_id).limit(1).execute().data
+    filas = sb.table("usuarios").select("clinica_id, usuario").eq("id", usuario_id).limit(1).execute().data
     if not filas:
         abort(404)
     clave = (request.form.get("clave") or "").strip() or CLAVE_POR_DEFECTO
 
     sb.table("usuarios").update({"password_hash": hashear(clave)}).eq("id", usuario_id).execute()
-    flash(f"Contraseña de {filas[0]['email']} cambiada a: {clave}", "success")
+    flash(f"Contraseña de «{filas[0]['usuario']}» cambiada a: {clave}", "success")
     return redirect(url_for("admin.clinica", clinica_id=filas[0]["clinica_id"]))
 
 

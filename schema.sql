@@ -33,8 +33,11 @@ create table if not exists clinicas (
 create table if not exists usuarios (
     id            bigserial primary key,
     clinica_id    bigint references clinicas(id) on delete cascade,
+    -- Se entra con 'usuario', no con el correo. El correo es opcional y solo
+    -- se guarda para recuperar la clave y mandar avisos.
+    usuario       text not null,
     nombre        text not null,
-    email         text not null unique,
+    email         text unique,
     password_hash text not null,               -- werkzeug.security, nunca en claro
     rol           text not null default 'usuario'
                   check (rol in ('superadmin', 'dueno', 'usuario')),
@@ -46,6 +49,8 @@ create table if not exists usuarios (
 );
 create index if not exists idx_usuarios_clinica on usuarios (clinica_id);
 create index if not exists idx_usuarios_email   on usuarios (lower(email));
+-- Único sin distinguir mayúsculas: "Admin" y "admin" son la misma cuenta.
+create unique index if not exists idx_usuarios_usuario on usuarios (lower(usuario));
 
 -- Primera clínica: la del propio consultorio.
 insert into clinicas (nombre, slug, direccion, telefono, activa, modulos)
@@ -55,8 +60,8 @@ on conflict (slug) do nothing;
 
 -- El primer superadministrador NO se puede crear desde la web (haría falta
 -- una cuenta para entrar). Se crea desde la terminal:
---     python crear_usuario.py --superadmin correo@ejemplo.com "Nombre" clave
---     python crear_usuario.py --clinica krizdent correo@ejemplo.com "Nombre" clave
+--     python crear_usuario.py --superadmin Admin "Nombre" clave
+--     python crear_usuario.py --clinica krizdent krizdent "KrizDent" clave
 
 -- ---------------------------------------------------------------------
 -- 0. PROFESIONALES (odontólogos que se asignan a citas y tratamientos)

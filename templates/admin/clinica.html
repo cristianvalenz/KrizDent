@@ -83,8 +83,15 @@
             <input class="form-control" id="u-nombre" name="nombre" required>
           </div>
           <div class="col-md-6">
+            <label class="form-label" for="u-usuario">Usuario</label>
+            <input class="form-control" id="u-usuario" name="usuario"
+                   autocapitalize="none" spellcheck="false" required>
+            <div class="form-text">Con esto entra al sistema.</div>
+          </div>
+          <div class="col-12">
             <label class="form-label" for="u-email">Correo</label>
-            <input class="form-control" type="email" id="u-email" name="email" required>
+            <input class="form-control" type="email" id="u-email" name="email">
+            <div class="form-text">Opcional. No sirve para entrar: es para recuperar la clave y mandar avisos.</div>
           </div>
           <div class="col-md-6">
             <label class="form-label" for="u-rol">Rol</label>
@@ -132,10 +139,18 @@
             <div class="kd-usuario-fila">
               <form method="post" action="{{ url_for('admin.guardar_usuario', usuario_id=u.id) }}"
                     class="row g-2 align-items-end flex-grow-1">
-                <div class="col-md-3">
+                <div class="col-md-2">
+                  <label class="form-label">Usuario</label>
+                  <input class="form-control form-control-sm dato" name="usuario" value="{{ u.usuario }}"
+                         autocapitalize="none" spellcheck="false" required>
+                </div>
+                <div class="col-md-2">
                   <label class="form-label">Nombre</label>
                   <input class="form-control form-control-sm" name="nombre" value="{{ u.nombre }}" required>
-                  <div class="form-text dato">{{ u.email }}</div>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">Correo</label>
+                  <input class="form-control form-control-sm" type="email" name="email" value="{{ u.email or '' }}">
                 </div>
                 <div class="col-md-2">
                   <label class="form-label">Rol</label>
@@ -144,7 +159,7 @@
                     <option value="usuario" {{ 'selected' if u.rol == 'usuario' }}>Usuario</option>
                   </select>
                 </div>
-                <div class="col-md-5">
+                <div class="col-md-12">
                   <label class="form-label">Módulos</label>
                   <div class="kd-modulos-check compacto">
                     {% for clave, etiqueta in modulos.items() %}
@@ -170,13 +185,13 @@
               <div class="kd-usuario-acciones">
                 <form method="post" action="{{ url_for('admin.reiniciar_clave', usuario_id=u.id) }}"
                       class="d-flex gap-1"
-                      onsubmit="return confirm('Se cambiará la contraseña de {{ u.email }}. ¿Continuar?')">
+                      onsubmit="return confirm('Se cambiará la contraseña de {{ u.usuario }}. ¿Continuar?')">
                   <input class="form-control form-control-sm" name="clave" placeholder="{{ clave_defecto }}"
                          style="width:110px" aria-label="Nueva contraseña">
                   <button class="btn btn-outline-secondary btn-sm text-nowrap" type="submit">Reiniciar clave</button>
                 </form>
                 <form method="post" action="{{ url_for('admin.eliminar_usuario', usuario_id=u.id) }}"
-                      onsubmit="return confirm('Se eliminará la cuenta de {{ u.email }}. ¿Continuar?')">
+                      onsubmit="return confirm('Se eliminará la cuenta de {{ u.usuario }}. ¿Continuar?')">
                   <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted"
                           style="font-size:.76rem" type="submit">Eliminar</button>
                 </form>
