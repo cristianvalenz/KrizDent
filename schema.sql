@@ -18,7 +18,11 @@ create table if not exists clinicas (
     slug        text not null unique,          -- identificador corto y estable
     ruc         text,
     direccion   text,
+    -- Hasta 3 números de contacto para el encabezado de recetas e historias.
+    -- Los vacíos no ocupan lugar; con uno solo el diseño queda igual que antes.
     telefono    text,
+    telefono2   text,
+    telefono3   text,
     -- Marca propia: la clínica la ve en su barra lateral y sale en el
     -- encabezado de sus recetas e historias. Si está vacía se usan las
     -- iniciales del nombre. logo_path es la ruta en el bucket, para poder

@@ -153,6 +153,8 @@ def guardar_clinica(clinica_id):
         "nombre": (request.form.get("nombre") or "").strip(),
         "ruc": (request.form.get("ruc") or "").strip() or None,
         "telefono": (request.form.get("telefono") or "").strip() or None,
+        "telefono2": (request.form.get("telefono2") or "").strip() or None,
+        "telefono3": (request.form.get("telefono3") or "").strip() or None,
         "direccion": (request.form.get("direccion") or "").strip() or None,
         "activa": request.form.get("activa") == "on",
         "vence_el": _fecha_o_none(request.form.get("vence_el")),

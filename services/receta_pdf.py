@@ -275,20 +275,35 @@ def _dibujar_bloque(c, x0, y0, w, h, receta, paciente, etiqueta_copia):
     c.drawString(tx, y - 38, "Sonrisas sanas y brillantes")
 
     # -- Contacto (derecha) --
+    # Los números van apilados y no en una sola línea: la columna mide 90pt y
+    # ahí no entran dos celulares de 9 dígitos seguidos. La dirección arranca
+    # debajo de los que haya, así que con 1 número queda como siempre.
+    clinica = datos_clinica()
+    telefonos = clinica["telefonos"]
     icono_r = 7
     icono_cx = x1 - 90
-    _icono_whatsapp(c, icono_cx, y - 8, icono_r)
-    c.setFont("Helvetica-Bold", 9.5)
-    c.setFillColorRGB(*AZUL)
-    c.drawString(icono_cx + 12, y - 10, datos_clinica()["celular"])
+    ty = y - 10
 
-    _icono_ubicacion(c, icono_cx + 3, y - 26, 4)
-    c.setFont("Helvetica", 6.3)
-    c.setFillColorRGB(*AZUL)
-    c.drawString(icono_cx + 12, y - 25, datos_clinica()["direccion"].split(",")[0])
-    resto_direccion = ",".join(datos_clinica()["direccion"].split(",")[1:]).strip()
-    if resto_direccion:
-        c.drawString(icono_cx + 12, y - 33, resto_direccion)
+    if telefonos:
+        _icono_whatsapp(c, icono_cx, y - 8, icono_r)
+        c.setFont("Helvetica-Bold", 9.5)
+        c.setFillColorRGB(*AZUL)
+        c.drawString(icono_cx + 12, ty, telefonos[0])
+        for extra in telefonos[1:3]:
+            ty -= 8.5
+            c.setFont("Helvetica", 7.5)
+            c.drawString(icono_cx + 12, ty, extra)
+
+    direccion = clinica["direccion"]
+    if direccion:
+        ay = ty - 12
+        _icono_ubicacion(c, icono_cx + 3, ay - 1, 4)
+        c.setFont("Helvetica", 6.3)
+        c.setFillColorRGB(*AZUL)
+        c.drawString(icono_cx + 12, ay, direccion.split(",")[0])
+        resto_direccion = ",".join(direccion.split(",")[1:]).strip()
+        if resto_direccion:
+            c.drawString(icono_cx + 12, ay - 8, resto_direccion)
 
     y -= logo_lado + 12
 

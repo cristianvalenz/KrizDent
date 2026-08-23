@@ -95,8 +95,11 @@ def _encabezado_pie(paciente):
 
         c.setFont("Helvetica", 8)
         c.setFillColor(GRIS)
-        c.drawRightString(ancho - margen, alto - margen - 8, datos_clinica()["celular"])
-        c.drawRightString(ancho - margen, alto - margen - 20, datos_clinica()["direccion"])
+        # Aquí sí hay ancho de A4, así que los números caben en una sola línea.
+        clinica = datos_clinica()
+        c.drawRightString(ancho - margen, alto - margen - 8,
+                          "  ·  ".join(clinica["telefonos"]))
+        c.drawRightString(ancho - margen, alto - margen - 20, clinica["direccion"])
 
         c.setStrokeColor(GRIS_CLARO)
         c.setLineWidth(1)

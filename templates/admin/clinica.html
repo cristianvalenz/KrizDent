@@ -52,13 +52,29 @@
             <label class="form-label" for="nombre">Nombre</label>
             <input class="form-control" id="nombre" name="nombre" value="{{ clinica.nombre }}" required>
           </div>
-          <div class="col-md-6">
+          <div class="col-12">
             <label class="form-label" for="ruc">RUC</label>
             <input class="form-control" id="ruc" name="ruc" value="{{ clinica.ruc or '' }}">
           </div>
-          <div class="col-md-6">
-            <label class="form-label" for="telefono">Teléfono</label>
-            <input class="form-control" id="telefono" name="telefono" value="{{ clinica.telefono or '' }}">
+          <div class="col-12">
+            <label class="form-label" for="telefono">Teléfonos</label>
+            <div class="row g-2">
+              <div class="col-4">
+                <input class="form-control dato" id="telefono" name="telefono"
+                       value="{{ clinica.telefono or '' }}" placeholder="Principal">
+              </div>
+              <div class="col-4">
+                <input class="form-control dato" name="telefono2"
+                       value="{{ clinica.telefono2 or '' }}" placeholder="Opcional">
+              </div>
+              <div class="col-4">
+                <input class="form-control dato" name="telefono3"
+                       value="{{ clinica.telefono3 or '' }}" placeholder="Opcional">
+              </div>
+            </div>
+            <div class="form-text">
+              Salen en el encabezado de sus recetas e historias. Los que dejes vacíos no aparecen.
+            </div>
           </div>
           <div class="col-12">
             <label class="form-label" for="direccion">Dirección</label>

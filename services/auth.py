@@ -116,10 +116,21 @@ def datos_clinica() -> dict:
 
     actual = clinica_actual()
     if not actual:
-        return dict(CLINICA)
+        base = dict(CLINICA)
+        base["telefonos"] = [base["celular"]] if base.get("celular") else []
+        return base
+
+    # Hasta 3 números; los vacíos no ocupan lugar en el encabezado.
+    telefonos = [
+        (actual.get(campo) or "").strip()
+        for campo in ("telefono", "telefono2", "telefono3")
+    ]
+    telefonos = [t for t in telefonos if t]
+
     return {
         "nombre": actual["nombre"],
-        "celular": actual.get("telefono") or "",
+        "telefonos": telefonos,
+        "celular": telefonos[0] if telefonos else "",   # el principal, para encabezados de una línea
         "direccion": actual.get("direccion") or "",
         "eslogan": CLINICA["eslogan"],
     }
