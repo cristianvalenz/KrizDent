@@ -1,0 +1,1073 @@
+<title>DentalSIS</title>
+<meta name="description" content="Software de gestión para consultorios odontológicos en Perú. Historia clínica, odontograma, periodontograma, recetas y caja en un solo lugar.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap">
+
+<style>
+/* ===================================================================
+   DentalSIS — one page
+   La paleta es la del sistema: el rojo y el verde no son decoración,
+   son la convención del odontograma (rojo = por tratar, verde/azul =
+   resuelto) y por eso ordenan la comparación papel vs. digital.
+   =================================================================== */
+:root {
+    --tinta:      #16232E;
+    --tinta-2:    #2C3E4C;
+    --ground:     #F4F7F8;
+    --panel:      #FFFFFF;
+    --linea:      #D8E2E7;
+    --linea-2:    #EAF0F2;
+    --clinico:    #1B6E8C;
+    --clinico-2:  #155971;
+    --lesion:     #D64545;
+    --verde:      #2E8B6E;
+    --oro:        #C9A227;
+    --texto:      #16232E;
+    --texto-2:    #5C6D79;
+    --texto-3:    #8A97A0;
+    --sombra:     0 1px 2px rgba(22,35,46,.05), 0 3px 10px rgba(22,35,46,.04);
+    --sombra-alta:0 2px 6px rgba(22,35,46,.07), 0 18px 44px rgba(22,35,46,.10);
+
+    --display: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+
+    --ancho: 1120px;
+    --radio: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --tinta:     #0C141B;
+        --tinta-2:   #16232E;
+        --ground:    #0C141B;
+        --panel:     #14212B;
+        --linea:     #253744;
+        --linea-2:   #1C2C37;
+        --clinico:   #4FA8C7;
+        --clinico-2: #7BC4DC;
+        --lesion:    #E8706F;
+        --verde:     #4FB795;
+        --oro:       #D9B94A;
+        --texto:     #E8EFF2;
+        --texto-2:   #A5B6C0;
+        --texto-3:   #7E929E;
+        --sombra:     0 1px 2px rgba(0,0,0,.3), 0 3px 10px rgba(0,0,0,.24);
+        --sombra-alta:0 2px 6px rgba(0,0,0,.36), 0 18px 44px rgba(0,0,0,.42);
+    }
+}
+:root[data-theme="dark"] {
+    --tinta:     #0C141B;
+    --tinta-2:   #16232E;
+    --ground:    #0C141B;
+    --panel:     #14212B;
+    --linea:     #253744;
+    --linea-2:   #1C2C37;
+    --clinico:   #4FA8C7;
+    --clinico-2: #7BC4DC;
+    --lesion:    #E8706F;
+    --verde:     #4FB795;
+    --oro:       #D9B94A;
+    --texto:     #E8EFF2;
+    --texto-2:   #A5B6C0;
+    --texto-3:   #7E929E;
+    --sombra:     0 1px 2px rgba(0,0,0,.3), 0 3px 10px rgba(0,0,0,.24);
+    --sombra-alta:0 2px 6px rgba(0,0,0,.36), 0 18px 44px rgba(0,0,0,.42);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--texto);
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+:where(a, button, summary):focus-visible {
+    outline: 2px solid var(--clinico);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
+.envoltura { width: min(100% - 40px, var(--ancho)); margin-inline: auto; }
+
+/* Rótulo de campo: la página está maquetada como una ficha clínica */
+.rotulo {
+    font-family: var(--mono);
+    font-size: .66rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--texto-3);
+}
+
+/* ---------- Barra superior ---------- */
+.barra {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--ground) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--linea);
+}
+.barra .envoltura {
+    display: flex; align-items: center; gap: 26px;
+    height: 66px;
+}
+.marca { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--texto); }
+.marca-nombre { font-size: 1.16rem; font-weight: 700; letter-spacing: -.025em; }
+.marca-nombre b { font-weight: 700; color: var(--clinico); }
+
+.barra nav { display: none; gap: 22px; margin-left: auto; }
+.barra nav a {
+    color: var(--texto-2); text-decoration: none; font-size: .89rem; font-weight: 500;
+}
+.barra nav a:hover { color: var(--clinico); }
+@media (min-width: 900px) { .barra nav { display: flex; } }
+
+.boton {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 20px;
+    border-radius: 8px;
+    border: 1.5px solid transparent;
+    font: 600 .9rem/1 var(--sans);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s, transform .15s;
+}
+.boton-solido { background: var(--clinico); color: #fff; }
+.boton-solido:hover { background: var(--clinico-2); transform: translateY(-1px); }
+.boton-linea { border-color: var(--linea); color: var(--texto); background: var(--panel); }
+.boton-linea:hover { border-color: var(--clinico); color: var(--clinico); }
+.barra .boton { margin-left: auto; }
+@media (min-width: 900px) { .barra .boton { margin-left: 0; } }
+
+/* ---------- Secciones ---------- */
+.seccion { padding: 84px 0; }
+.seccion-tinta { background: var(--tinta); color: #E8EFF2; }
+.seccion-tinta .rotulo { color: #7E939F; }
+.seccion + .seccion { border-top: 1px solid var(--linea); }
+.seccion-tinta + .seccion, .seccion + .seccion-tinta { border-top: 0; }
+
+.encabezado-seccion { max-width: 62ch; margin-bottom: 44px; }
+.encabezado-seccion h2 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(2rem, 4vw, 2.85rem);
+    line-height: 1.12;
+    letter-spacing: -.015em;
+    margin: 10px 0 14px;
+}
+.encabezado-seccion p { color: var(--texto-2); font-size: 1.03rem; }
+.seccion-tinta .encabezado-seccion p { color: #A5B6C0; }
+
+/* ---------- Héroe ---------- */
+.heroe { padding: 68px 0 76px; }
+.heroe .envoltura { display: grid; gap: 48px; align-items: center; }
+@media (min-width: 980px) { .heroe .envoltura { grid-template-columns: 1.02fr 1fr; gap: 56px; } }
+
+.heroe h1 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(2.5rem, 5.6vw, 3.9rem);
+    line-height: 1.06;
+    letter-spacing: -.02em;
+    margin: 14px 0 18px;
+}
+.heroe h1 em { font-style: italic; color: var(--clinico); }
+.heroe .bajada { font-size: 1.1rem; color: var(--texto-2); max-width: 52ch; }
+.heroe-acciones { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+
+.heroe-datos {
+    display: flex; flex-wrap: wrap; gap: 28px;
+    margin-top: 38px; padding-top: 24px;
+    border-top: 1px solid var(--linea);
+}
+.heroe-datos div strong {
+    display: block;
+    font-family: var(--mono); font-size: 1.32rem; font-weight: 600;
+    letter-spacing: -.02em; color: var(--clinico);
+}
+.heroe-datos div span { font-size: .82rem; color: var(--texto-2); }
+
+/* Marco del odontograma: imita el papel milimetrado de una carta clínica */
+.marco {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--linea);
+    border-radius: var(--radio);
+    box-shadow: var(--sombra-alta);
+    overflow: hidden;
+}
+.marco-barra {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--linea);
+    background: color-mix(in srgb, var(--ground) 60%, var(--panel));
+}
+.marco-barra span { width: 9px; height: 9px; border-radius: 50%; background: var(--linea); }
+.marco-barra small {
+    margin-left: 6px;
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--texto-3);
+}
+.marco-cuerpo { padding: 20px 16px 16px; }
+.marco svg { display: block; width: 100%; height: auto; }
+
+.leyenda { display: flex; flex-wrap: wrap; gap: 14px; padding: 14px 16px 4px; }
+.leyenda span { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; color: var(--texto-2); }
+.leyenda i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+/* ---------- Papel vs DentalSIS ---------- */
+.comparacion { display: grid; gap: 0; border: 1px solid var(--linea); border-radius: var(--radio); overflow: hidden; background: var(--panel); }
+.comparacion-fila { display: grid; grid-template-columns: 1fr; }
+@media (min-width: 860px) { .comparacion-fila { grid-template-columns: 1.1fr 1fr 1fr; } }
+.comparacion-fila + .comparacion-fila { border-top: 1px solid var(--linea-2); }
+
+.comparacion-cabecera { background: color-mix(in srgb, var(--ground) 70%, var(--panel)); }
+.comparacion-cabecera > * {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--texto-3);
+    padding: 14px 20px;
+}
+.comparacion-cabecera .col-papel { color: var(--lesion); }
+.comparacion-cabecera .col-sis { color: var(--verde); }
+.comparacion-fila > div { padding: 16px 20px; }
+.comparacion-tema { font-weight: 600; font-size: .95rem; }
+.comparacion-papel, .comparacion-sis { font-size: .92rem; color: var(--texto-2); display: flex; gap: 10px; }
+.comparacion-papel svg, .comparacion-sis svg { flex: 0 0 16px; margin-top: 3px; }
+.comparacion-papel svg { color: var(--lesion); }
+.comparacion-sis svg { color: var(--verde); }
+@media (min-width: 860px) {
+    .comparacion-papel { border-inline: 1px solid var(--linea-2); }
+}
+
+/* ---------- Funciones ---------- */
+.rejilla-funciones { display: grid; gap: 1px; background: var(--linea); border: 1px solid var(--linea); border-radius: var(--radio); overflow: hidden; }
+@media (min-width: 620px) { .rejilla-funciones { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 960px) { .rejilla-funciones { grid-template-columns: repeat(3, 1fr); } }
+
+.funcion { background: var(--panel); padding: 24px 22px; }
+.funcion-icono {
+    width: 36px; height: 36px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--clinico) 12%, transparent);
+    color: var(--clinico);
+    margin-bottom: 14px;
+}
+.funcion h3 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+.funcion p { font-size: .88rem; color: var(--texto-2); }
+
+/* ---------- Detalle de una función ---------- */
+.detalle { display: grid; gap: 40px; align-items: center; }
+@media (min-width: 940px) { .detalle { grid-template-columns: 1fr 1fr; gap: 60px; } }
+.detalle + .detalle { margin-top: 76px; }
+@media (min-width: 940px) { .detalle.invertido .detalle-texto { order: 2; } }
+.detalle h3 {
+    font-family: var(--display); font-weight: 400;
+    font-size: clamp(1.6rem, 3vw, 2.1rem); line-height: 1.15;
+    margin: 10px 0 14px;
+}
+.detalle p { color: var(--texto-2); }
+.seccion-tinta .detalle p { color: #A5B6C0; }
+.lista-puntos { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 10px; }
+.lista-puntos li { display: flex; gap: 10px; font-size: .93rem; color: var(--texto-2); }
+.seccion-tinta .lista-puntos li { color: #A5B6C0; }
+.lista-puntos svg { flex: 0 0 17px; margin-top: 3px; color: var(--clinico); }
+.seccion-tinta .marco { background: var(--tinta-2); border-color: #2B3E4C; }
+.seccion-tinta .marco-barra { background: rgba(255,255,255,.03); border-color: #2B3E4C; }
+
+/* ---------- Mensualidad ---------- */
+.planes { display: grid; gap: 20px; }
+@media (min-width: 820px) { .planes { grid-template-columns: 1.15fr 1fr; } }
+.plan {
+    background: var(--panel); border: 1px solid var(--linea);
+    border-radius: var(--radio); padding: 30px 28px; box-shadow: var(--sombra);
+}
+.plan-precio {
+    font-family: var(--mono); font-size: 2.1rem; font-weight: 600;
+    letter-spacing: -.03em; color: var(--clinico); margin: 6px 0 2px;
+}
+.plan-precio small { font-size: .82rem; font-weight: 400; color: var(--texto-2); letter-spacing: 0; }
+.plan ul { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 9px; }
+.plan li { display: flex; gap: 10px; font-size: .92rem; color: var(--texto-2); }
+.plan li svg { flex: 0 0 17px; margin-top: 3px; color: var(--verde); }
+.plan-nota { font-size: .84rem; color: var(--texto-3); margin-top: 18px; }
+
+/* ---------- Contacto ---------- */
+.contacto { display: grid; gap: 36px; }
+@media (min-width: 880px) { .contacto { grid-template-columns: 1fr 1fr; gap: 56px; } }
+.datos-contacto { display: grid; gap: 2px; margin-top: 26px; }
+.dato-fila {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 16px 0;
+    border-top: 1px solid rgba(255,255,255,.09);
+}
+.dato-fila:last-child { border-bottom: 1px solid rgba(255,255,255,.09); }
+.dato-fila svg { flex: 0 0 19px; margin-top: 2px; color: var(--clinico); }
+.dato-fila .rotulo { display: block; margin-bottom: 2px; }
+.dato-fila a, .dato-fila span.valor { color: #E8EFF2; text-decoration: none; font-size: 1rem; }
+.dato-fila a:hover { color: var(--clinico-2); text-decoration: underline; }
+
+.tarjeta-cta {
+    background: var(--tinta-2);
+    border: 1px solid #2B3E4C;
+    border-radius: var(--radio);
+    padding: 32px 30px;
+}
+.tarjeta-cta h3 { font-family: var(--display); font-weight: 400; font-size: 1.75rem; line-height: 1.15; margin-bottom: 10px; }
+.tarjeta-cta p { color: #A5B6C0; font-size: .95rem; }
+.tarjeta-cta .heroe-acciones { margin-top: 24px; }
+.tarjeta-cta .boton-linea { background: transparent; border-color: #344A5A; color: #E8EFF2; }
+.tarjeta-cta .boton-linea:hover { border-color: var(--clinico-2); color: var(--clinico-2); }
+
+/* ---------- Pie ---------- */
+.pie { background: var(--tinta); color: #7E939F; padding: 30px 0; border-top: 1px solid rgba(255,255,255,.08); }
+.pie .envoltura { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; }
+.pie small { font-size: .8rem; }
+.pie .marca-nombre { color: #E8EFF2; font-size: 1rem; }
+
+/* ---------- Odontograma del héroe ---------- */
+.diente-corona, .diente-raiz { fill: var(--panel); stroke: #8FA3AF; stroke-width: 1.1; stroke-linejoin: round; }
+.cara { stroke: #C6D0D6; stroke-width: .7; transition: fill .5s ease; }
+.eje { stroke: var(--linea); stroke-width: 1; stroke-dasharray: 3 3; }
+.fdi { font: 500 8.5px var(--mono); fill: var(--texto-3); text-anchor: middle; }
+:root[data-theme="dark"] .cara, :root:not([data-theme="light"]) .cara { stroke: #33485A; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .cara { stroke: #C6D0D6; } }
+
+@media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+}
+</style>
+
+<!-- ================= BARRA ================= -->
+<header class="barra">
+  <div class="envoltura">
+    <a class="marca" href="#inicio" aria-label="DentalSIS — inicio">
+      <svg width="30" height="30" viewBox="0 0 32 32" role="img" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="#1B6E8C"/>
+        <path d="M16 7.4c-2.1 0-2.8 1-4.5 1-1.9 0-3.9 1.5-3.9 5.2 0 4.7 2.3 12.1 4.2 12.1 1.6 0 1.7-4.1 4.2-4.1s2.6 4.1 4.2 4.1c1.9 0 4.2-7.4 4.2-12.1 0-3.7-2-5.2-3.9-5.2-1.7 0-2.4-1-4.5-1Z"
+              fill="none" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/>
+        <path d="M16 11.6v6.2M12.6 14.7h6.8" stroke="#fff" stroke-width="1.3" stroke-linecap="round" opacity=".72"/>
+      </svg>
+      <span class="marca-nombre">Dental<b>SIS</b></span>
+    </a>
+    <nav>
+      <a href="#diferencia">Papel vs. DentalSIS</a>
+      <a href="#funciones">Funciones</a>
+      <a href="#clinico">Ficha clínica</a>
+      <a href="#mensualidad">Mensualidad</a>
+    </nav>
+    <a class="boton boton-solido" href="#contacto">Pedir una demo</a>
+  </div>
+</header>
+
+<!-- ================= HÉROE ================= -->
+<section class="heroe" id="inicio">
+  <div class="envoltura">
+    <div>
+      <p class="rotulo">Software para consultorios odontológicos · Perú</p>
+      <h1>Tu consultorio deja el archivador y pasa a <em>una sola pantalla</em>.</h1>
+      <p class="bajada">
+        Historia clínica, odontograma, periodontograma, recetas, caja y almacén
+        en un mismo sistema. Hecho para consultorios peruanos, con la notación
+        y los formatos que ya usas todos los días.
+      </p>
+      <div class="heroe-acciones">
+        <a class="boton boton-solido" href="#contacto">Pedir una demo</a>
+        <a class="boton boton-linea" href="#diferencia">Ver la diferencia</a>
+      </div>
+      <div class="heroe-datos">
+        <div><strong>32</strong><span>piezas, notación FDI</span></div>
+        <div><strong>6</strong><span>sitios por pieza en el periodontograma</span></div>
+        <div><strong>0</strong><span>historias perdidas</span></div>
+      </div>
+    </div>
+
+    <div class="marco">
+      <div class="marco-barra">
+        <span></span><span></span><span></span>
+        <small>Odontograma · paciente</small>
+      </div>
+      <div class="marco-cuerpo">
+        <svg id="odontograma" viewBox="0 0 640 290" role="img"
+             aria-label="Odontograma de 32 piezas con hallazgos marcados por cara"></svg>
+      </div>
+      <div class="leyenda">
+        <span><i style="background:#D64545"></i> Caries</span>
+        <span><i style="background:#1B6E8C"></i> Obturado</span>
+        <span><i style="background:#E08E3C"></i> En mal estado</span>
+        <span><i style="background:#8A97A0"></i> Ausente</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PAPEL VS DENTALSIS ================= -->
+<section class="seccion" id="diferencia">
+  <div class="envoltura">
+    <div class="encabezado-seccion">
+      <p class="rotulo">La diferencia</p>
+      <h2>Lo que hoy te cuesta una tarde, mañana te cuesta un clic.</h2>
+      <p>
+        No es cambiar por cambiar. Estas son las nueve cosas que un consultorio
+        en papel repite todos los días, y cómo quedan con DentalSIS.
+      </p>
+    </div>
+
+    <div class="comparacion">
+      <div class="comparacion-fila comparacion-cabecera">
+        <div>Tarea del día</div>
+        <div class="col-papel">En papel</div>
+        <div class="col-sis">Con DentalSIS</div>
+      </div>
+
+      <div class="comparacion-fila">
+        <div class="comparacion-tema">Encontrar una historia clínica</div>
+        <div class="comparacion-papel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          Revolver el archivador mientras el paciente espera en el sillón.
+        </div>
+        <div class="comparacion-sis">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Escribes el nombre o el DNI y la tienes completa en segundos.
+        </div>
+      </div>
+
+      <div class="comparacion-fila">
+        <div class="comparacion-tema">Marcar el odontograma</div>
+        <div class="comparacion-papel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          Dibujarlo de nuevo en cada control, y comparar de memoria con el anterior.
+        </div>
+        <div class="comparacion-sis">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Marcas la cara exacta con un clic y guardas versiones: inicial, evolución y alta.
+        </div>
+      </div>
+
+      <div class="comparacion-fila">
+        <div class="comparacion-tema">Entregar una receta</div>
+        <div class="comparacion-papel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          Escrita a mano, sin copia para ti, y a veces ilegible en la botica.
+        </div>
+        <div class="comparacion-sis">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          PDF con tu logo y tu registro CCDP, dos copias por hoja: paciente y consultorio.
+        </div>
+      </div>
+
+      <div class="comparacion-fila">
+        <div class="comparacion-tema">Saber cuánto te deben</div>
+        <div class="comparacion-papel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          Sumar a mano en un cuaderno y confiar en que nadie olvidó anotar.
+        </div>
+        <div class="comparacion-sis">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Estado de cuenta por paciente: presupuestado, cobrado y saldo al instante.
+        </div>
+      </div>
+
+      <div class="comparacion-fila">
+        <div class="comparacion-tema">Controlar el almacén</div>
+        <div class="comparacion-papel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          Te enteras de que falta anestesia el día que se acabó.
+        </div>
+        <div class="comparacion-sis">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Aviso antes de que falte, y también si algo vence o queda inservible.
+        </div>
+      </div>
+
+      <div class="comparacion-fila">
+        <div class="comparacion-tema">Guardar radiografías</div>
+        <div class="comparacion-papel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          En sobres que se traspapelan o se quedan en casa del paciente.
+        </div>
+        <div class="comparacion-sis">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Adjuntas a la entrada del historial, disponibles desde cualquier equipo.
+        </div>
+      </div>
+
+      <div class="comparacion-fila">
+        <div class="comparacion-tema">Recordar las citas</div>
+        <div class="comparacion-papel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          Llamar uno por uno y anotar a quién ya llamaste.
+        </div>
+        <div class="comparacion-sis">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          WhatsApp con el mensaje ya escrito, y el sistema marca a quién ya avisaste.
+        </div>
+      </div>
+
+      <div class="comparacion-fila">
+        <div class="comparacion-tema">Saber quién produce más</div>
+        <div class="comparacion-papel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          A ojo, o sacando la cuenta a fin de mes si alcanza el tiempo.
+        </div>
+        <div class="comparacion-sis">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Cobrado del día, del mes y producción por profesional, en el panel de inicio.
+        </div>
+      </div>
+
+      <div class="comparacion-fila">
+        <div class="comparacion-tema">Si se pierde o se moja</div>
+        <div class="comparacion-papel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          No hay copia. La historia clínica de ese paciente se perdió.
+        </div>
+        <div class="comparacion-sis">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Todo vive en la nube y sigue ahí aunque se malogre la computadora.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FUNCIONES ================= -->
+<section class="seccion" id="funciones">
+  <div class="envoltura">
+    <div class="encabezado-seccion">
+      <p class="rotulo">Qué incluye</p>
+      <h2>Un módulo para cada cosa que ya haces.</h2>
+      <p>
+        Todo está conectado: lo que marcas en el odontograma se convierte en
+        plan de tratamiento, el plan en presupuesto, y el presupuesto en caja.
+      </p>
+    </div>
+
+    <div class="rejilla-funciones">
+      <article class="funcion">
+        <div class="funcion-icono">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.7"/><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Pacientes e historia clínica</h3>
+        <p>Ficha completa con alergias siempre a la vista, evolución por fecha y radiografías adjuntas. Se descarga en PDF con el odontograma incluido.</p>
+      </article>
+
+      <article class="funcion">
+        <div class="funcion-icono">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4c-1.9 0-2.5.9-4 .9C6.3 4.9 4.5 6.2 4.5 9.5c0 4.2 2 10.8 3.7 10.8 1.4 0 1.5-3.7 3.8-3.7s2.4 3.7 3.8 3.7c1.7 0 3.7-6.6 3.7-10.8 0-3.3-1.8-4.6-3.5-4.6-1.5 0-2.1-.9-4-.9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Odontograma</h3>
+        <p>Notación FDI, dentición adulta y temporal, marcado por cara (oclusal, mesial, distal, vestibular, lingual), coronas, pernos y aparatos de ortodoncia.</p>
+      </article>
+
+      <article class="funcion">
+        <div class="funcion-icono">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.5 15.5 8 10l3.5 3.5L15 8l5.5 7.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 19.5h17" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Periodontograma</h3>
+        <p>Carta periodontal por cuadrantes con 6 sitios por pieza, margen gingival, furca y movilidad. Calcula solo el índice de placa y el sangrado al sondaje.</p>
+      </article>
+
+      <article class="funcion">
+        <div class="funcion-icono">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 10h17M8 3.5v3M16 3.5v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Agenda</h3>
+        <p>Vista de calendario y de lista, citas por profesional y recordatorio por WhatsApp con un clic, sin pagar una API de mensajería.</p>
+      </article>
+
+      <article class="funcion">
+        <div class="funcion-icono">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.5v9M9.3 15c0 1.1 1.2 2 2.7 2s2.7-.8 2.7-1.8c0-2.4-5.4-1.2-5.4-3.4 0-1 1.2-1.8 2.7-1.8s2.7.7 2.7 1.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Presupuestos y pagos</h3>
+        <p>Presupuesto por pieza, pagos parciales por cualquier método y saldo pendiente siempre visible en la ficha del paciente.</p>
+      </article>
+
+      <article class="funcion">
+        <div class="funcion-icono">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h9l4 4V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14.5 3.5V8h4.5M8 13h8M8 16.5h5.5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Recetas</h3>
+        <p>Media hoja apaisada con dos copias, tu logo y el formato de sello del Colegio Odontológico. Se imprime tal cual y queda registrada.</p>
+      </article>
+
+      <article class="funcion">
+        <div class="funcion-icono">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.5 8.5 12 4l8.5 4.5V19a1 1 0 0 1-1 1H4.5a1 1 0 0 1-1-1V8.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 20v-6.5h7V20" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Almacén con kardex</h3>
+        <p>Entradas y salidas con cantidades fraccionadas (medio paquete de algodón), fechas de vencimiento y aviso de stock bajo o material en mal estado.</p>
+      </article>
+
+      <article class="funcion">
+        <div class="funcion-icono">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20V10M11 20V4M18 20v-7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Reportes</h3>
+        <p>Ingresos del mes, tratamientos más hechos y ranking de producción por profesional, sin exportar nada a Excel.</p>
+      </article>
+
+      <article class="funcion">
+        <div class="funcion-icono">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.5 17.5c3-4 5-4 7 0M4 13.5c4-6 8-6 12 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14 19.5h6.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Consentimiento con firma</h3>
+        <p>El paciente firma en la pantalla con el dedo y el consentimiento queda guardado con su firma, la fecha y el tratamiento autorizado.</p>
+      </article>
+
+      <article class="funcion">
+        <div class="funcion-icono">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9.5 3.5v5L5 17.5a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3L14.5 8.5v-5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 3.5h7M7.6 14.5h8.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Laboratorio dental</h3>
+        <p>Qué trabajo mandaste, a qué laboratorio, cuándo lo prometieron y en qué estado va. Se acabó preguntar por teléfono.</p>
+      </article>
+
+      <article class="funcion">
+        <div class="funcion-icono">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="8.5" cy="8" r="3" stroke="currentColor" stroke-width="1.7"/><circle cx="16" cy="9.5" r="2.3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19.5c0-3 2.3-5 5-5s5 2 5 5M14 15.2c2.2.3 3.8 1.9 3.8 4.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Usuarios y permisos</h3>
+        <p>Cada quien entra con su usuario y ve solo lo suyo. La recepcionista maneja la agenda sin ver la facturación de la clínica.</p>
+      </article>
+
+      <article class="funcion">
+        <div class="funcion-icono">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect x="4.5" y="11" width="15" height="9.5" rx="2.2" stroke="currentColor" stroke-width="1.7"/></svg>
+        </div>
+        <h3>Tus datos son tuyos</h3>
+        <p>Cada consultorio ve únicamente su información, con respaldo en la nube. Si algún día te vas, te llevas tu base de datos.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FICHA CLÍNICA ================= -->
+<section class="seccion seccion-tinta" id="clinico">
+  <div class="envoltura">
+    <div class="encabezado-seccion">
+      <p class="rotulo">Lo clínico</p>
+      <h2>Hecho con la norma peruana, no traducido de otro país.</h2>
+      <p>
+        El odontograma sigue la notación FDI y las convenciones de la norma
+        técnica del MINSA: rojo lo que hay que tratar, azul lo ya tratado.
+      </p>
+    </div>
+
+    <div class="detalle">
+      <div class="detalle-texto">
+        <p class="rotulo">Odontograma</p>
+        <h3>Marca la cara exacta, no el diente entero.</h3>
+        <p>
+          Una caries en la oclusal no es lo mismo que en la mesial, y así queda
+          registrado. Cada pieza se divide en sus cinco caras y se pinta solo
+          donde corresponde.
+        </p>
+        <ul class="lista-puntos">
+          <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Dentición adulta de 32 piezas y temporal de 20, según el paciente.</li>
+          <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Coronas, remanente radicular, pernos y piezas ausentes.</li>
+          <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Guarda versiones: cómo llegó, cómo va y cómo se fue de alta.</li>
+          <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Cada hallazgo se puede mandar al presupuesto con un botón.</li>
+        </ul>
+      </div>
+      <div class="marco">
+        <div class="marco-barra"><span></span><span></span><span></span><small>Plan de tratamiento</small></div>
+        <div class="marco-cuerpo">
+          <svg viewBox="0 0 420 200" role="img" aria-label="Plan de tratamiento generado desde el odontograma">
+            <g font-family="IBM Plex Mono, monospace" font-size="11">
+              <text x="0" y="14" fill="#7E939F" font-size="9" letter-spacing="1.4">PIEZA   HALLAZGO</text>
+              <line x1="0" y1="24" x2="420" y2="24" stroke="#2B3E4C"/>
+              <g fill="#E8EFF2">
+                <text x="0" y="46">16</text><text x="70" y="46" font-family="Instrument Sans, sans-serif">Caries · oclusal</text>
+                <text x="0" y="76">26</text><text x="70" y="76" font-family="Instrument Sans, sans-serif">Obturado en mal estado</text>
+                <text x="0" y="106">37</text><text x="70" y="106" font-family="Instrument Sans, sans-serif">Remanente radicular</text>
+                <text x="0" y="136">45</text><text x="70" y="136" font-family="Instrument Sans, sans-serif">Caries · mesial</text>
+              </g>
+              <g>
+                <rect x="300" y="33" width="118" height="20" rx="5" fill="none" stroke="#344A5A"/>
+                <text x="359" y="47" fill="#7BC4DC" font-size="9" text-anchor="middle" font-family="Instrument Sans, sans-serif">Al presupuesto</text>
+                <rect x="300" y="63" width="118" height="20" rx="5" fill="none" stroke="#344A5A"/>
+                <text x="359" y="77" fill="#7BC4DC" font-size="9" text-anchor="middle" font-family="Instrument Sans, sans-serif">Al presupuesto</text>
+                <rect x="300" y="93" width="118" height="20" rx="5" fill="none" stroke="#344A5A"/>
+                <text x="359" y="107" fill="#7BC4DC" font-size="9" text-anchor="middle" font-family="Instrument Sans, sans-serif">Al presupuesto</text>
+                <rect x="300" y="123" width="118" height="20" rx="5" fill="none" stroke="#344A5A"/>
+                <text x="359" y="137" fill="#7BC4DC" font-size="9" text-anchor="middle" font-family="Instrument Sans, sans-serif">Al presupuesto</text>
+              </g>
+              <line x1="0" y1="160" x2="420" y2="160" stroke="#2B3E4C"/>
+              <text x="0" y="180" fill="#7E939F" font-size="9" letter-spacing="1.4">4 HALLAZGOS SIN RESOLVER</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="detalle invertido">
+      <div class="detalle-texto">
+        <p class="rotulo">Periodontograma</p>
+        <h3>La carta periodontal completa, con los dientes dibujados.</h3>
+        <p>
+          Seis sitios por pieza — tres vestibulares y tres palatinos — con
+          profundidad de sondaje y margen gingival. Los índices se calculan
+          solos mientras registras.
+        </p>
+        <ul class="lista-puntos">
+          <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Índice de placa y sangrado al sondaje, calculados al vuelo.</li>
+          <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Media de profundidad y de nivel de inserción por paciente.</li>
+          <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Furca, movilidad, pronóstico, ausencia e implante por pieza.</li>
+        </ul>
+      </div>
+      <div class="marco">
+        <div class="marco-barra"><span></span><span></span><span></span><small>Carta periodontal</small></div>
+        <div class="marco-cuerpo">
+          <svg id="perio" viewBox="0 0 420 190" role="img"
+               aria-label="Carta periodontal con curva de sondaje sobre los dientes"></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MENSUALIDAD ================= -->
+<section class="seccion" id="mensualidad">
+  <div class="envoltura">
+    <div class="encabezado-seccion">
+      <p class="rotulo">Cómo se contrata</p>
+      <h2>Una mensualidad, sin comprar licencias ni servidores.</h2>
+      <p>
+        Se paga mes a mes. Si un mes no lo usas, lo pausas: tu información
+        queda guardada y vuelve completa cuando reactivas.
+      </p>
+    </div>
+
+    <div class="planes">
+      <div class="plan">
+        <p class="rotulo">Plan consultorio</p>
+        <div class="plan-precio">Mensual <small>· según los módulos que necesites</small></div>
+        <p style="color:var(--texto-2); font-size:.95rem">
+          Se arma con los módulos que de verdad vas a usar. Si no llevas
+          laboratorio, no lo pagas.
+        </p>
+        <ul>
+          <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Instalación y configuración inicial sin costo.</li>
+          <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Tu logo en recetas e historias clínicas.</li>
+          <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Varios usuarios con permisos distintos.</li>
+          <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Respaldo en la nube y soporte directo conmigo.</li>
+        </ul>
+        <p class="plan-nota">Escríbeme y te paso el precio según tu consultorio.</p>
+      </div>
+
+      <div class="plan">
+        <p class="rotulo">Empezar</p>
+        <div style="display:grid; gap:18px; margin-top:14px">
+          <div>
+            <p style="font-family:var(--mono); font-size:.72rem; letter-spacing:.14em; color:var(--clinico)">01</p>
+            <p style="font-weight:600; font-size:.98rem">Vemos tu consultorio</p>
+            <p style="font-size:.9rem; color:var(--texto-2)">Una llamada corta para saber cómo trabajas hoy.</p>
+          </div>
+          <div>
+            <p style="font-family:var(--mono); font-size:.72rem; letter-spacing:.14em; color:var(--clinico)">02</p>
+            <p style="font-weight:600; font-size:.98rem">Te lo dejo listo</p>
+            <p style="font-size:.9rem; color:var(--texto-2)">Con tu logo, tus datos y tus profesionales cargados.</p>
+          </div>
+          <div>
+            <p style="font-family:var(--mono); font-size:.72rem; letter-spacing:.14em; color:var(--clinico)">03</p>
+            <p style="font-weight:600; font-size:.98rem">Entras y usas</p>
+            <p style="font-size:.9rem; color:var(--texto-2)">Desde cualquier computadora del consultorio, con tu usuario.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CONTACTO ================= -->
+<section class="seccion seccion-tinta" id="contacto">
+  <div class="envoltura">
+    <div class="contacto">
+      <div>
+        <p class="rotulo">Contacto</p>
+        <h2 style="font-family:var(--display); font-weight:400; font-size:clamp(2rem,4vw,2.7rem); line-height:1.12; margin:10px 0 14px">
+          Conversemos sobre tu consultorio.
+        </h2>
+        <p style="color:#A5B6C0">
+          Escríbeme por WhatsApp o correo y coordinamos una demostración sin
+          compromiso, con tus propios casos.
+        </p>
+
+        <div class="datos-contacto">
+          <div class="dato-fila">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            <div>
+              <span class="rotulo">Teléfono / WhatsApp</span>
+              <a href="https://wa.me/51944316316" target="_blank" rel="noopener">944 316 316</a>
+            </div>
+          </div>
+          <div class="dato-fila">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2.2" stroke="currentColor" stroke-width="1.6"/><path d="m4 7 8 6 8-6" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            <div>
+              <span class="rotulo">Correo</span>
+              <a href="mailto:Cristianjvalenz@gmail.com">Cristianjvalenz@gmail.com</a>
+            </div>
+          </div>
+          <div class="dato-fila">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.6" stroke="currentColor" stroke-width="1.6"/></svg>
+            <div>
+              <span class="rotulo">Dirección</span>
+              <span class="valor">Asoc. Villa Vitarte Mz B lote 3<br>Ate Vitarte, Lima</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tarjeta-cta">
+        <h3>Pide una demostración</h3>
+        <p>
+          Te muestro el sistema con un caso real: cargamos un paciente, marcamos
+          su odontograma y sacamos su receta. Toma quince minutos.
+        </p>
+        <div class="heroe-acciones">
+          <a class="boton boton-solido" href="https://wa.me/51944316316?text=Hola%2C%20quiero%20una%20demo%20de%20DentalSIS"
+             target="_blank" rel="noopener">Escribir por WhatsApp</a>
+          <a class="boton boton-linea" href="mailto:Cristianjvalenz@gmail.com?subject=Demo%20DentalSIS">Enviar correo</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PIE ================= -->
+<footer class="pie">
+  <div class="envoltura">
+    <span class="marca-nombre">Dental<b style="color:var(--clinico-2)">SIS</b></span>
+    <small>Ate Vitarte, Lima · 944 316 316 · Cristianjvalenz@gmail.com</small>
+  </div>
+</footer>
+
+<script>
+/* ===================================================================
+   Los dos gráficos se dibujan en JS y no a mano en el HTML: son las
+   mismas fórmulas del sistema (anatomía por tipo de pieza, coordenadas
+   por milímetro de sondaje), así que la página muestra el producto real
+   y no un dibujo aproximado.
+   =================================================================== */
+(function () {
+    "use strict";
+    var NS = "http://www.w3.org/2000/svg";
+    var reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function crear(tag, attrs) {
+        var el = document.createElementNS(NS, tag);
+        for (var k in attrs) el.setAttribute(k, attrs[k]);
+        return el;
+    }
+
+    /* --- Anatomía: el último dígito FDI dice qué tipo de pieza es --- */
+    function tipo(fdi) {
+        var n = fdi % 10;
+        if (n <= 2) return "incisivo";
+        if (n === 3) return "canino";
+        if (n <= 5) return "premolar";
+        return "molar";
+    }
+    function esSuperior(fdi) { var q = Math.floor(fdi / 10); return q === 1 || q === 2; }
+
+    function corona(t, x, y, w, h) {
+        if (t === "incisivo") {
+            var c = w * 0.2, r = 3;
+            return "M" + (x + c) + " " + y + "L" + (x + w - c) + " " + y +
+                   "Q" + (x + w) + " " + (y + h * 0.55) + " " + (x + w - 1.5) + " " + (y + h - r) +
+                   "Q" + (x + w - 1.5) + " " + (y + h) + " " + (x + w - r - 1.5) + " " + (y + h) +
+                   "L" + (x + r + 1.5) + " " + (y + h) +
+                   "Q" + (x + 1.5) + " " + (y + h) + " " + (x + 1.5) + " " + (y + h - r) +
+                   "Q" + x + " " + (y + h * 0.55) + " " + (x + c) + " " + y + "Z";
+        }
+        if (t === "canino") {
+            var cc = w * 0.2;
+            return "M" + (x + cc) + " " + y + "L" + (x + w - cc) + " " + y +
+                   "Q" + (x + w) + " " + (y + h * 0.5) + " " + (x + w - 2) + " " + (y + h * 0.66) +
+                   "L" + (x + w / 2) + " " + (y + h) + "L" + (x + 2) + " " + (y + h * 0.66) +
+                   "Q" + x + " " + (y + h * 0.5) + " " + (x + cc) + " " + y + "Z";
+        }
+        if (t === "premolar") {
+            var cp = w * 0.17;
+            return "M" + (x + cp) + " " + y + "L" + (x + w - cp) + " " + y +
+                   "Q" + (x + w) + " " + (y + h * 0.5) + " " + (x + w - 2) + " " + (y + h * 0.7) +
+                   "L" + (x + w * 0.74) + " " + (y + h) +
+                   "Q" + (x + w * 0.5) + " " + (y + h * 0.8) + " " + (x + w * 0.26) + " " + (y + h) +
+                   "L" + (x + 2) + " " + (y + h * 0.7) +
+                   "Q" + x + " " + (y + h * 0.5) + " " + (x + cp) + " " + y + "Z";
+        }
+        var cm = w * 0.1;
+        return "M" + (x + cm) + " " + y + "L" + (x + w - cm) + " " + y +
+               "Q" + (x + w) + " " + (y + h * 0.28) + " " + (x + w) + " " + (y + h * 0.66) +
+               "L" + (x + w * 0.78) + " " + (y + h) +
+               "Q" + (x + w * 0.5) + " " + (y + h * 0.8) + " " + (x + w * 0.22) + " " + (y + h) +
+               "L" + x + " " + (y + h * 0.66) +
+               "Q" + x + " " + (y + h * 0.28) + " " + (x + cm) + " " + y + "Z";
+    }
+
+    function raiz(cx, yApice, yBase, ancho, desvio) {
+        var b = ancho / 2, ap = cx + desvio, codo = yApice + (yBase - yApice) * 0.38;
+        return "M" + (cx - b) + " " + yBase +
+               "Q" + (cx - b) + " " + codo + " " + (ap - 1.3) + " " + (yApice + 1) +
+               "Q" + ap + " " + (yApice - 1) + " " + (ap + 1.3) + " " + (yApice + 1) +
+               "Q" + (cx + b) + " " + codo + " " + (cx + b) + " " + yBase + "Z";
+    }
+
+    function raices(t, fdi, x, y, w, h) {
+        var yb = y + h;
+        if (t === "molar") {
+            if (esSuperior(fdi)) return [
+                raiz(x + w * 0.23, y + 4, yb, w * 0.21, -2),
+                raiz(x + w * 0.50, y, yb, w * 0.21, 0),
+                raiz(x + w * 0.77, y + 4, yb, w * 0.21, 2)
+            ];
+            return [raiz(x + w * 0.3, y + 2, yb, w * 0.25, -2), raiz(x + w * 0.7, y + 2, yb, w * 0.25, 2)];
+        }
+        return [raiz(x + w * 0.5, y, yb, w * 0.3, 0)];
+    }
+
+    /* --- 1. Odontograma del héroe --- */
+    var svg = document.getElementById("odontograma");
+    if (svg) {
+        var SUP = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
+        var INF = [48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38];
+        var L = 14, paso = 36, mx = 22, hueco = 14;
+        var yCajaS = 108, yCajaI = 182, yNumS = 132, yNumI = 158;
+        var yCorS = 66, yRaizS = 34, yCorI = 200, yRaizI = 226;
+        var W = 26, H = 24, HR = 28;
+
+        function cx(i) { return mx + L + i * paso + (i >= 8 ? hueco : 0); }
+
+        var xMedio = (cx(7) + cx(8)) / 2;
+        svg.appendChild(crear("line", {x1: xMedio, y1: 6, x2: xMedio, y2: 262, "class": "eje"}));
+        svg.appendChild(crear("line", {x1: cx(0) - L - 6, y1: 145, x2: cx(15) + L + 6, y2: 145, "class": "eje"}));
+
+        // Hallazgos de ejemplo: fdi -> {cara: color} o "pieza": color
+        var casos = {
+            16: {oclusal: "#D64545"}, 26: {mesial: "#1B6E8C"}, 11: {vestibular: "#D64545"},
+            24: {pieza: "#2E8B6E"}, 28: {pieza: "#8A97A0"},
+            36: {oclusal: "#1B6E8C"}, 46: {distal: "#E08E3C"}, 37: {pieza: "#D64545"},
+            45: {mesial: "#D64545"}, 34: {oclusal: "#1B6E8C"}
+        };
+
+        [[SUP, true], [INF, false]].forEach(function (par) {
+            var piezas = par[0], arriba = par[1];
+            var yc = arriba ? yCajaS : yCajaI;
+            var yn = arriba ? yNumS : yNumI;
+            var ycor = arriba ? yCorS : yCorI;
+            var yrz = arriba ? yRaizS : yRaizI;
+
+            piezas.forEach(function (fdi, i) {
+                var x = cx(i), t = tipo(fdi), g = crear("g", {});
+
+                var gr = crear("g", arriba ? {} : {transform: "translate(0 " + (2 * yrz + HR) + ") scale(1 -1)"});
+                raices(t, fdi, x - W / 2, yrz, W, HR).forEach(function (d) {
+                    gr.appendChild(crear("path", {d: d, "class": "diente-raiz"}));
+                });
+                g.appendChild(gr);
+
+                var gc = crear("g", arriba ? {} : {transform: "translate(0 " + (2 * ycor + H) + ") scale(1 -1)"});
+                gc.appendChild(crear("path", {d: corona(t, x - W / 2, ycor, W, H), "class": "diente-corona"}));
+                g.appendChild(gc);
+
+                // Cuadro de 5 caras
+                var h = L, li = L * 0.42;
+                var caras = {
+                    vestibular: [[x-h,yc-h],[x+h,yc-h],[x+li,yc-li],[x-li,yc-li]],
+                    lingual:    [[x-h,yc+h],[x+h,yc+h],[x+li,yc+li],[x-li,yc+li]],
+                    mesial:     [[x-h,yc-h],[x-h,yc+h],[x-li,yc+li],[x-li,yc-li]],
+                    distal:     [[x+h,yc-h],[x+h,yc+h],[x+li,yc+li],[x+li,yc-li]],
+                    oclusal:    [[x-li,yc-li],[x+li,yc-li],[x+li,yc+li],[x-li,yc+li]]
+                };
+                var caso = casos[fdi] || {};
+                Object.keys(caras).forEach(function (nombre) {
+                    var pts = caras[nombre].map(function (p) { return p[0] + "," + p[1]; }).join(" ");
+                    var pol = crear("polygon", {points: pts, "class": "cara", fill: "var(--panel)"});
+                    var color = caso.pieza || caso[nombre];
+                    if (color) {
+                        pol.dataset.destino = color;
+                        if (reducido) pol.setAttribute("fill", color);
+                    }
+                    g.appendChild(pol);
+                });
+
+                var txt = crear("text", {x: x, y: yn, "class": "fdi"});
+                txt.textContent = fdi;
+                g.appendChild(txt);
+                svg.appendChild(g);
+            });
+        });
+
+        // Los hallazgos aparecen uno a uno: es lo que hace el odontólogo al marcar.
+        if (!reducido) {
+            var marcados = svg.querySelectorAll("[data-destino]");
+            var visto = false;
+            var obs = new IntersectionObserver(function (entradas) {
+                entradas.forEach(function (e) {
+                    if (!e.isIntersecting || visto) return;
+                    visto = true;
+                    marcados.forEach(function (pol, n) {
+                        setTimeout(function () { pol.setAttribute("fill", pol.dataset.destino); }, 380 + n * 130);
+                    });
+                });
+            }, {threshold: .3});
+            obs.observe(svg);
+        }
+    }
+
+    /* --- 2. Carta periodontal --- */
+    var perio = document.getElementById("perio");
+    if (perio) {
+        var PIEZAS = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
+        var pasoP = 25, mxP = 14, cejY = 96, escala = 2.6;
+        // Sondaje de ejemplo, en milímetros
+        var sondaje = [4,3,5,3,2,2,3,3,2,3,2,3,4,6,4,3];
+
+        var puntos = [], fondo = [];
+        PIEZAS.forEach(function (fdi, i) {
+            var x = mxP + i * pasoP + 7;
+            var t = tipo(fdi);
+            var g = crear("g", {});
+            raices(t, fdi, x - 11, 42, 22, 24).forEach(function (d) {
+                g.appendChild(crear("path", {d: d, "class": "diente-raiz"}));
+            });
+            g.appendChild(crear("path", {d: corona(t, x - 11, 66, 22, 22), "class": "diente-corona"}));
+            perio.appendChild(g);
+
+            var y = cejY - sondaje[i] * escala;
+            puntos.push(x + "," + cejY);
+            fondo.push(x + "," + y);
+
+            var num = crear("text", {x: x, y: 128, "class": "fdi"});
+            num.textContent = fdi;
+            perio.appendChild(num);
+        });
+
+        perio.appendChild(crear("line", {x1: 8, y1: cejY, x2: 412, y2: cejY, stroke: "#D64545", "stroke-width": 1}));
+        var curva = crear("polyline", {
+            points: fondo.join(" "), fill: "none", stroke: "#4FA8C7",
+            "stroke-width": 1.6, "stroke-linejoin": "round"
+        });
+        perio.appendChild(curva);
+
+        fondo.forEach(function (p) {
+            var xy = p.split(",");
+            perio.appendChild(crear("circle", {cx: xy[0], cy: xy[1], r: 2.4, fill: "#4FA8C7"}));
+        });
+
+        var pie = crear("text", {x: 8, y: 158, "class": "fdi", "text-anchor": "start"});
+        pie.textContent = "Media de sondaje 3.3 mm · %IP 12.5 · %SAS 8.3";
+        perio.appendChild(pie);
+    }
+})();
+</script>
