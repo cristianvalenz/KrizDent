@@ -243,6 +243,12 @@ create table if not exists productos_almacen (
     -- Stock en la MISMA unidad_medida. Numeric admite fracciones: "medio paquete" = 0.5.
     stock_actual    numeric(10,2) not null default 0,
     stock_minimo    numeric(10,2),           -- umbral para avisar "stock bajo" (opcional)
+    -- El estado físico va aparte de la cantidad: un instrumental puede tener
+    -- stock de sobra y aun así estar inservible. Lo que no esté 'bueno' sale
+    -- como alerta en el panel, igual que el stock bajo o lo por vencer.
+    estado          text not null default 'bueno'
+                    check (estado in ('bueno', 'mal_estado', 'baja')),
+    nota_estado     text,                    -- "la turbina pierde presión"
     activo          boolean not null default true,
     creado_en       timestamptz not null default now()
 );
@@ -365,6 +371,28 @@ create table if not exists periodontogramas (
     creado_en          timestamptz not null default now()
 );
 create index if not exists idx_periodontogramas_paciente on periodontogramas (paciente_id, fecha desc);
+
+-- ---------------------------------------------------------------------
+-- 4d. SOPORTE: REPORTES DE LA CLÍNICA AL ADMINISTRADOR
+-- ---------------------------------------------------------------------
+-- Canal de la clínica hacia el dueño de la plataforma: fallas, pedidos o
+-- consultas. Queda registrado con su respuesta, a diferencia de un correo.
+create table if not exists reportes_plataforma (
+    id          bigserial primary key,
+    clinica_id  bigint not null references clinicas(id) on delete cascade,
+    usuario_id  bigint references usuarios(id) on delete set null,
+    asunto      text not null,
+    detalle     text not null,
+    tipo        text not null default 'falla'
+                check (tipo in ('falla', 'pedido', 'consulta', 'otro')),
+    estado      text not null default 'pendiente'
+                check (estado in ('pendiente', 'en_proceso', 'resuelto')),
+    respuesta   text,
+    creado_en   timestamptz not null default now(),
+    resuelto_en timestamptz
+);
+create index if not exists idx_reportes_clinica on reportes_plataforma (clinica_id, creado_en desc);
+create index if not exists idx_reportes_estado  on reportes_plataforma (estado, creado_en desc);
 
 -- ---------------------------------------------------------------------
 -- 5. ÍNDICES

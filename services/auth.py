@@ -263,7 +263,30 @@ def registrar_guardia(app):
             "clinica_sesion": clinica_actual(),
             "modulos_visibles": modulos_visibles(),
             "es_superadmin": es_superadmin(),
+            "es_titular": es_titular(),
         }
+
+
+def es_titular() -> bool:
+    usuario = usuario_actual()
+    return bool(usuario and usuario["rol"] == "dueno")
+
+
+def requiere_titular(vista):
+    """
+    Solo el titular administra a su gente. No se controla por módulo porque
+    no es algo que se contrate: viene con ser el titular de la clínica.
+    """
+    @wraps(vista)
+    def envoltura(*args, **kwargs):
+        if not es_titular():
+            return render_template(
+                "error.html", codigo=403,
+                titulo="Solo el titular",
+                detalle="Esta zona es del titular de la clínica.",
+            ), 403
+        return vista(*args, **kwargs)
+    return envoltura
 
 
 def requiere_superadmin(vista):

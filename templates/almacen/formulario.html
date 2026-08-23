@@ -64,6 +64,27 @@
                placeholder="Avisa cuando baje de aquí">
       </div>
 
+      {# El estado es independiente de la cantidad: puede haber 10 unidades y
+         estar las 10 malogradas. Lo que no esté "En buen estado" sale como
+         alerta en el panel. #}
+      <div class="col-md-4">
+        <label class="form-label" for="estado">Estado</label>
+        <select class="form-select" id="estado" name="estado">
+          {% for clave, info in estados.items() %}
+            <option value="{{ clave }}"
+                    {% if (producto.estado or 'bueno') == clave %}selected{% endif %}>
+              {{ info.etiqueta }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-8">
+        <label class="form-label" for="nota_estado">Detalle del estado (opcional)</label>
+        <input class="form-control" id="nota_estado" name="nota_estado"
+               value="{{ producto.nota_estado or '' }}"
+               placeholder="Ej. la turbina pierde presión, falta mandarla a mantenimiento">
+      </div>
+
       <div class="col-12">
         <label class="form-label">Fecha de vencimiento</label>
         <div class="d-flex gap-3 mb-2">

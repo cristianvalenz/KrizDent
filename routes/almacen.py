@@ -15,7 +15,7 @@ from datetime import date
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
-from services.constantes import CATEGORIAS_ALMACEN, TIPOS_MOVIMIENTO, UNIDADES_MEDIDA
+from services.constantes import CATEGORIAS_ALMACEN, ESTADOS_ARTICULO, TIPOS_MOVIMIENTO, UNIDADES_MEDIDA
 from services.auth import ins, sel, upd
 
 
@@ -67,7 +67,8 @@ def nuevo():
         if not datos["nombre"]:
             flash("El producto necesita un nombre.", "danger")
             return render_template("almacen/formulario.html", producto=datos, modo="nuevo",
-                                    categorias=CATEGORIAS_ALMACEN, unidades=UNIDADES_MEDIDA)
+                                    categorias=CATEGORIAS_ALMACEN, unidades=UNIDADES_MEDIDA,
+                            estados=ESTADOS_ARTICULO)
 
         stock_inicial = datos.pop("stock_inicial")
         creado = ins("productos_almacen", datos).execute().data[0]
@@ -80,7 +81,8 @@ def nuevo():
         return redirect(url_for("almacen.detalle", producto_id=creado["id"]))
 
     return render_template("almacen/formulario.html", producto={}, modo="nuevo",
-                            categorias=CATEGORIAS_ALMACEN, unidades=UNIDADES_MEDIDA)
+                            categorias=CATEGORIAS_ALMACEN, unidades=UNIDADES_MEDIDA,
+                            estados=ESTADOS_ARTICULO)
 
 
 @bp.route("/<int:producto_id>/editar", methods=["GET", "POST"])
@@ -93,14 +95,16 @@ def editar(producto_id):
         if not datos["nombre"]:
             flash("El producto necesita un nombre.", "danger")
             return render_template("almacen/formulario.html", producto=producto, modo="editar",
-                                    categorias=CATEGORIAS_ALMACEN, unidades=UNIDADES_MEDIDA)
+                                    categorias=CATEGORIAS_ALMACEN, unidades=UNIDADES_MEDIDA,
+                            estados=ESTADOS_ARTICULO)
 
         upd("productos_almacen", datos).eq("id", producto_id).execute()
         flash("Producto actualizado.", "success")
         return redirect(url_for("almacen.detalle", producto_id=producto_id))
 
     return render_template("almacen/formulario.html", producto=producto, modo="editar",
-                            categorias=CATEGORIAS_ALMACEN, unidades=UNIDADES_MEDIDA)
+                            categorias=CATEGORIAS_ALMACEN, unidades=UNIDADES_MEDIDA,
+                            estados=ESTADOS_ARTICULO)
 
 
 @bp.route("/<int:producto_id>")
@@ -202,6 +206,10 @@ def _campos_del_formulario(form) -> dict:
         "tiene_vencimiento": tiene_vencimiento,
         "fecha_vencimiento": limpio("fecha_vencimiento") if tiene_vencimiento else None,
         "stock_minimo": stock_minimo,
+        # El estado físico va aparte de la cantidad: puede haber 10 unidades
+        # y estar las 10 malogradas.
+        "estado": form.get("estado") if form.get("estado") in ESTADOS_ARTICULO else "bueno",
+        "nota_estado": limpio("nota_estado"),
         "stock_inicial": stock_inicial,   # se usa solo en "nuevo"; editar() lo descarta
     }
 

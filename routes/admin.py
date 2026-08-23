@@ -11,12 +11,12 @@ administrador de la plataforma administra cuentas, no datos clínicos.
 
 import re
 import unicodedata
-from datetime import date
+from datetime import date, datetime, timezone
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from services.auth import hashear, requiere_superadmin, usuario_actual
-from services.constantes import MODULOS, ROLES
+from services.constantes import (ESTADOS_REPORTE, MODULOS, ROLES, TIPOS_REPORTE)
 from services.storage import ErrorSubida, borrar_imagen, subir_logo
 from services.supabase_client import sb
 
@@ -313,3 +313,41 @@ def eliminar_usuario(usuario_id):
         sb.table("usuarios").delete().eq("id", usuario_id).execute()
         flash("Usuario eliminado.", "info")
     return redirect(url_for("admin.clinica", clinica_id=filas[0]["clinica_id"]))
+
+
+# ---------------------------------------------------------------------
+# Reportes que mandan las clínicas
+# ---------------------------------------------------------------------
+
+@bp.route("/reportes")
+@requiere_superadmin
+def reportes():
+    filas = (
+        sb.table("reportes_plataforma")
+        .select("*, clinicas(id, nombre), usuarios(usuario)")
+        .order("creado_en", desc=True).limit(200).execute().data or []
+    )
+    estado = request.args.get("estado")
+    if estado in ESTADOS_REPORTE:
+        filas = [r for r in filas if r["estado"] == estado]
+
+    return render_template("admin/reportes.html", reportes=filas,
+                           tipos=TIPOS_REPORTE, estados=ESTADOS_REPORTE,
+                           filtro=estado or "")
+
+
+@bp.route("/reportes/<int:reporte_id>", methods=["POST"])
+@requiere_superadmin
+def responder_reporte(reporte_id):
+    nuevo = request.form.get("estado")
+    if nuevo not in ESTADOS_REPORTE:
+        abort(400)
+
+    cambios = {
+        "estado": nuevo,
+        "respuesta": (request.form.get("respuesta") or "").strip() or None,
+        "resuelto_en": datetime.now(timezone.utc).isoformat() if nuevo == "resuelto" else None,
+    }
+    sb.table("reportes_plataforma").update(cambios).eq("id", reporte_id).execute()
+    flash("Reporte actualizado.", "success")
+    return redirect(url_for("admin.reportes", estado=request.form.get("volver_a") or None))

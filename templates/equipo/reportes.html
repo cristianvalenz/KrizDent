@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block titulo %}Soporte{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">Reportes al administrador</p>
+    <h1>Soporte</h1>
+    <p class="subtitulo">Avisa de una falla, pide una cuenta nueva o consulta algo del sistema.</p>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <form method="post" class="card">
+      <div class="card-header">Nuevo reporte</div>
+      <div class="card-body d-flex flex-column gap-3">
+        <div>
+          <label class="form-label" for="tipo">Tipo</label>
+          <select class="form-select" id="tipo" name="tipo">
+            {% for clave, etiqueta in tipos.items() %}
+              <option value="{{ clave }}">{{ etiqueta }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="asunto">Asunto</label>
+          <input class="form-control" id="asunto" name="asunto" maxlength="120" required
+                 placeholder="Ej. No puedo imprimir recetas">
+        </div>
+        <div>
+          <label class="form-label" for="detalle">Detalle</label>
+          <textarea class="form-control" id="detalle" name="detalle" rows="5" required
+                    placeholder="Cuenta qué pasó, en qué pantalla y desde cuándo."></textarea>
+        </div>
+      </div>
+      <div class="card-header border-top border-bottom-0 text-end">
+        <button class="btn btn-primary btn-sm" type="submit">Enviar reporte</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">
+        Enviados <span class="text-muted fw-normal small">· {{ reportes | length }}</span>
+      </div>
+
+      {% if reportes %}
+        <div class="card-body d-flex flex-column gap-2">
+          {% for r in reportes %}
+            <div class="kd-reporte">
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <strong class="small">{{ r.asunto }}</strong>
+                <span class="kd-estado {{ estados[r.estado].clase }}">{{ estados[r.estado].etiqueta }}</span>
+              </div>
+              <p class="kd-eyebrow mt-1 mb-1">
+                {{ tipos.get(r.tipo, r.tipo) }} · {{ r.creado_en | fecha }}
+              </p>
+              <p class="small text-muted mb-0">{{ r.detalle }}</p>
+              {% if r.respuesta %}
+                <div class="kd-reporte-respuesta">
+                  <span class="kd-eyebrow d-block mb-1">Respuesta</span>
+                  {{ r.respuesta }}
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="kd-vacio py-4">
+          <strong>Sin reportes</strong>
+          Todo lo que envíes queda registrado aquí con su respuesta.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -204,3 +204,25 @@ ROLES = {
     "dueno":      "Titular de la clínica",
     "usuario":    "Usuario",
 }
+
+# --- Estado físico de un artículo del almacén --------------------------------
+# Va aparte de la cantidad: un instrumental puede tener stock de sobra y aun
+# así estar inservible, y son dos alertas distintas para el titular.
+ESTADOS_ARTICULO = {
+    "bueno":      {"etiqueta": "En buen estado", "clase": "estado-completada"},
+    "mal_estado": {"etiqueta": "En mal estado",  "clase": "estado-pendiente"},
+    "baja":       {"etiqueta": "Dado de baja",   "clase": "estado-cancelada"},
+}
+
+# --- Reportes de la clínica hacia el administrador de la plataforma ----------
+TIPOS_REPORTE = {
+    "falla":    "Falla del sistema",
+    "pedido":   "Pedido o mejora",
+    "consulta": "Consulta",
+    "otro":     "Otro",
+}
+ESTADOS_REPORTE = {
+    "pendiente":  {"etiqueta": "Pendiente",  "clase": "estado-pendiente"},
+    "en_proceso": {"etiqueta": "En proceso", "clase": "estado-pendiente"},
+    "resuelto":   {"etiqueta": "Resuelto",   "clase": "estado-completada"},
+}

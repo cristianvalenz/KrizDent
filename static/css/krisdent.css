@@ -904,3 +904,46 @@ a:hover { color: var(--kd-clinico-alt); }
 .kd-modulos-check.bloqueado { opacity: .55; }
 .kd-modulos-check.bloqueado .kd-check { cursor: default; }
 .kd-modulos-aviso { color: var(--kd-clinico); }
+
+/* =====================================================================
+   PANEL DEL TITULAR: ventas, ranking y reportes
+   ===================================================================== */
+/* Barras de venta diaria: alto proporcional al mejor día de la semana */
+.kd-barras { display: flex; align-items: flex-end; gap: 6px; height: 110px; }
+.kd-barra {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-end; height: 100%;
+}
+.kd-barra span {
+    width: 100%;
+    background: var(--kd-clinico);
+    border-radius: 3px 3px 0 0;
+    min-height: 3px;
+}
+.kd-barra small {
+    margin-top: 5px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .62rem; color: #8A97A0;
+}
+
+.kd-ranking-fila + .kd-ranking-fila { margin-top: 10px; }
+.kd-ranking-barra {
+    height: 5px; margin-top: 4px;
+    background: var(--kd-porcelana); border-radius: 999px; overflow: hidden;
+}
+.kd-ranking-barra span {
+    display: block; height: 100%;
+    background: var(--kd-verde); border-radius: 999px;
+}
+
+.kd-reporte {
+    padding: 12px;
+    border: 1px solid var(--kd-mineral); border-radius: var(--kd-radio);
+    background: #FCFDFE;
+}
+.kd-reporte-respuesta {
+    margin-top: 8px; padding: 8px 10px;
+    border-left: 3px solid var(--kd-clinico);
+    background: #F1F7F9; border-radius: 0 6px 6px 0;
+    font-size: .82rem;
+}

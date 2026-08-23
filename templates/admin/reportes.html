@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block titulo %}Reportes{% endblock %}
+
+{% block contenido %}
+<div class="kd-encabezado">
+  <div>
+    <p class="kd-eyebrow">Administración de la plataforma</p>
+    <h1>Reportes de las clínicas</h1>
+    <p class="subtitulo">{{ reportes | length }} en la vista actual.</p>
+  </div>
+  <div class="kd-paleta">
+    <a class="kd-pincel {{ 'activo' if not filtro }}" href="{{ url_for('admin.reportes') }}">Todos</a>
+    {% for clave, info in estados.items() %}
+      <a class="kd-pincel {{ 'activo' if filtro == clave }}"
+         href="{{ url_for('admin.reportes', estado=clave) }}">{{ info.etiqueta }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+{% if reportes %}
+  <div class="d-flex flex-column gap-3">
+    {% for r in reportes %}
+      <div class="card">
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <span>
+            {{ r.asunto }}
+            <span class="text-muted fw-normal small ms-1">
+              · {{ r.clinicas.nombre if r.clinicas else 'Clínica eliminada' }}
+              {% if r.usuarios %}· <span class="dato">{{ r.usuarios.usuario }}</span>{% endif %}
+              · {{ tipos.get(r.tipo, r.tipo) }}
+              · {{ r.creado_en | fecha }}
+            </span>
+          </span>
+          <span class="kd-estado {{ estados[r.estado].clase }}">{{ estados[r.estado].etiqueta }}</span>
+        </div>
+
+        <div class="card-body">
+          <p class="small mb-3" style="white-space:pre-line">{{ r.detalle }}</p>
+
+          <form method="post" action="{{ url_for('admin.responder_reporte', reporte_id=r.id) }}"
+                class="row g-2 align-items-end">
+            <input type="hidden" name="volver_a" value="{{ filtro }}">
+            <div class="col-md-7">
+              <label class="form-label">Respuesta para la clínica</label>
+              <input class="form-control form-control-sm" name="respuesta"
+                     value="{{ r.respuesta or '' }}" placeholder="Qué se hizo o qué falta">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Estado</label>
+              <select class="form-select form-select-sm" name="estado">
+                {% for clave, info in estados.items() %}
+                  <option value="{{ clave }}" {{ 'selected' if r.estado == clave }}>{{ info.etiqueta }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2 text-end">
+              <button class="btn btn-primary btn-sm w-100" type="submit">Guardar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card">
+    <div class="kd-vacio">
+      <strong>Sin reportes</strong>
+      {% if filtro %}Prueba con otro estado.{% else %}Ninguna clínica ha reportado nada.{% endif %}
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

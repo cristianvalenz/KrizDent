@@ -42,12 +42,76 @@
   </div>
 </div>
 
-{% if alertas_stock_bajo or alertas_vencimiento %}
+{% if ventas %}
+  <div class="row g-3 mb-4">
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header">Ventas</div>
+        <div class="card-body">
+          <div class="kd-eyebrow">Cobrado hoy</div>
+          <div class="kd-cifra p-0"><span class="valor" style="color:var(--kd-verde)">S/ {{ '%.2f' % ventas.hoy }}</span></div>
+          <div class="kd-eyebrow mt-3">Cobrado este mes</div>
+          <div class="kd-cifra p-0"><span class="valor" style="font-size:1.5rem">S/ {{ '%.2f' % ventas.mes }}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header">Últimos 7 días</div>
+        <div class="card-body">
+          <div class="kd-barras">
+            {% for d in ventas.dias %}
+              <div class="kd-barra" title="{{ d.fecha | fecha }} · S/ {{ '%.2f' % d.monto }}">
+                <span style="height:{{ [d.alto, 3] | max }}%"></span>
+                <small>{{ d.fecha[-2:] }}</small>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header">
+          Producción del mes
+          <span class="text-muted fw-normal small ms-1">· por profesional</span>
+        </div>
+        <div class="card-body">
+          {% if ventas.ranking %}
+            {% for r in ventas.ranking %}
+              <div class="kd-ranking-fila">
+                <div class="d-flex justify-content-between small">
+                  <span>{{ r.nombre }}</span>
+                  <span class="dato fw-semibold">S/ {{ '%.2f' % r.monto }}</span>
+                </div>
+                <div class="kd-ranking-barra">
+                  <span style="width:{{ (r.monto / ventas.tope_ranking * 100) | round }}%"></span>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="small text-muted mb-0">Sin cobros registrados este mes.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% if alertas_stock_bajo or alertas_vencimiento or alertas_mal_estado %}
   <div class="card mb-4" style="border-color:#F2D4D4">
     <div class="card-header" style="background:#FBEAEA;color:var(--kd-lesion)">
       Alertas del almacén
     </div>
     <div class="card-body small">
+      {% for p in alertas_mal_estado %}
+        <div class="mb-1">
+          <a href="{{ url_for('almacen.detalle', producto_id=p.id) }}">{{ p.nombre }}</a>
+          — en mal estado{% if p.nota_estado %}: {{ p.nota_estado }}{% endif %}
+        </div>
+      {% endfor %}
       {% for p in alertas_stock_bajo %}
         <div class="mb-1">
           <a href="{{ url_for('almacen.detalle', producto_id=p.id) }}">{{ p.nombre }}</a>

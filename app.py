@@ -21,6 +21,7 @@ from routes.auth import bp as auth_bp                      # noqa: E402
 from routes.citas import bp as citas_bp                    # noqa: E402
 from routes.consentimientos import bp as consentimientos_bp  # noqa: E402
 from routes.dashboard import bp as dashboard_bp            # noqa: E402
+from routes.equipo import bp as equipo_bp                  # noqa: E402
 from routes.finanzas import bp as finanzas_bp              # noqa: E402
 from routes.historial import bp as historial_bp            # noqa: E402
 from routes.laboratorio import bp as laboratorio_bp        # noqa: E402
@@ -72,6 +73,7 @@ def crear_app() -> Flask:
     app.register_blueprint(reportes_bp)
     app.register_blueprint(periodontograma_bp)
     app.register_blueprint(profesionales_bp)
+    app.register_blueprint(equipo_bp)
 
     # ---- Manejo de errores ------------------------------------------------
     @app.errorhandler(404)
