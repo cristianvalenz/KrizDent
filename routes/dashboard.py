@@ -62,7 +62,7 @@ def _resumen_ventas(hoy: date) -> dict:
     }
 
 
-@bp.route("/")
+@bp.route("/panel")
 def index():
     hoy = datetime.now(timezone.utc).date()
     inicio_hoy = datetime.combine(hoy, datetime.min.time(), tzinfo=timezone.utc)

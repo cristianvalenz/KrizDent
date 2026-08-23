@@ -29,6 +29,7 @@ from routes.odontograma import bp as odont_bp              # noqa: E402
 from routes.pacientes import bp as pacientes_bp            # noqa: E402
 from routes.periodontograma import bp as periodontograma_bp  # noqa: E402
 from routes.profesionales import bp as profesionales_bp    # noqa: E402
+from routes.publico import bp as publico_bp                # noqa: E402
 from routes.recetas import bp as recetas_bp                # noqa: E402
 from routes.reportes import bp as reportes_bp              # noqa: E402
 from services.auth import registrar_guardia                # noqa: E402
@@ -58,6 +59,7 @@ def crear_app() -> Flask:
     registrar_guardia(app)
 
     # Cada módulo del sistema vive en su propio blueprint.
+    app.register_blueprint(publico_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(dashboard_bp)

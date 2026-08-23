@@ -145,8 +145,11 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
 .boton-solido:hover { background: var(--clinico-2); transform: translateY(-1px); }
 .boton-linea { border-color: var(--linea); color: var(--texto); background: var(--panel); }
 .boton-linea:hover { border-color: var(--clinico); color: var(--clinico); }
-.barra .boton { margin-left: auto; }
-@media (min-width: 900px) { .barra .boton { margin-left: 0; } }
+.barra-acciones { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+@media (min-width: 900px) { .barra-acciones { margin-left: 0; } }
+/* En pantalla chica solo cabe «Ingresar»: la demo se pide igual bajando. */
+@media (max-width: 560px) { .barra-acciones .boton-solido { display: none; } }
+.barra-acciones .boton { padding: 9px 16px; }
 
 /* ---------- Secciones ---------- */
 .seccion { padding: 84px 0; }
@@ -364,7 +367,15 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
       <a href="#clinico">Ficha clínica</a>
       <a href="#mensualidad">Mensualidad</a>
     </nav>
-    <a class="boton boton-solido" href="#contacto">Pedir una demo</a>
+    <div class="barra-acciones">
+      <a class="boton boton-linea" href="/entrar">
+        Ingresar
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M13 5.5 19.5 12 13 18.5M19 12H5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      <a class="boton boton-solido" href="#contacto">Pedir una demo</a>
+    </div>
   </div>
 </header>
 

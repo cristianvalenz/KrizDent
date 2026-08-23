@@ -23,7 +23,7 @@ from services.constantes import MODULO_DE_BLUEPRINT, MODULOS
 from services.supabase_client import sb
 
 # Endpoints que se pueden ver sin haber iniciado sesión.
-LIBRES = {"auth.entrar", "static"}
+LIBRES = {"auth.entrar", "publico.inicio", "static"}
 # Blueprints que un usuario de clínica puede usar siempre, sin importar su plan.
 SIEMPRE = {"auth"}
 
