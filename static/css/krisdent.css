@@ -71,7 +71,11 @@
 
 /* Tema oscuro: solo cuando el usuario lo pide con el botón. El claro es el
    predeterminado y no depende de la configuración del sistema operativo. */
-:root[data-theme="dark"] {
+/* El atributo se llama data-tema y no data-theme a propósito: los visores
+   que incrustan la página (por ejemplo el de artefactos de claude.ai)
+   escriben data-theme en la raíz para imponer SU tema. Con un nombre
+   propio, el tema de esta página lo decide solo su botón. */
+:root[data-tema="dark"] {
     color-scheme: dark;
     /* .text-muted de Bootstrap pinta con rgba() sobre este valor. */
     --bs-body-color-rgb: 230, 238, 242;
@@ -1210,8 +1214,8 @@ a:hover { color: var(--kd-clinico-alt); }
 /* Se muestra el icono del tema al que se VA a cambiar, no el actual */
 .kd-icono-luna { display: block; }
 .kd-icono-sol  { display: none; }
-:root[data-theme="dark"] .kd-icono-luna { display: none; }
-:root[data-theme="dark"] .kd-icono-sol  { display: block; }
+:root[data-tema="dark"] .kd-icono-luna { display: none; }
+:root[data-tema="dark"] .kd-icono-sol  { display: block; }
 /* =====================================================================
    AVISOS EN CABECERA DE TARJETA
    Antes iban con style="" en la plantilla y por eso no cambiaban de tema.

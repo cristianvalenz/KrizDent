@@ -11,7 +11,7 @@
     try {
       var elegido = localStorage.getItem("kd-tema");
       if (elegido === "dark" || elegido === "light") {
-        document.documentElement.setAttribute("data-theme", elegido);
+        document.documentElement.setAttribute("data-tema", elegido);
       }
     } catch (e) { /* sin almacenamiento: manda el tema del sistema */ }
   })();
@@ -50,7 +50,12 @@
     --radio: 12px;
 }
 
-:root[data-theme="dark"] {
+/* Tema oscuro: solo si el visitante lo pide con el botón; el claro es el
+   predeterminado. El atributo se llama data-tema y no data-theme a propósito:
+   los visores que incrustan la página (por ejemplo el de artefactos de
+   claude.ai) escriben data-theme en la raíz para imponer SU tema, y entonces
+   la portada saldría oscura sin que nadie se lo haya pedido. */
+:root[data-tema="dark"] {
     --tinta:     #0C141B;
     --tinta-2:   #16232E;
     --ground:    #0C141B;
@@ -156,8 +161,8 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
 .tema:hover { border-color: var(--clinico); color: var(--clinico); }
 .icono-luna { display: block; }
 .icono-sol  { display: none; }
-:root[data-theme="dark"] .icono-luna { display: none; }
-:root[data-theme="dark"] .icono-sol  { display: block; }
+:root[data-tema="dark"] .icono-luna { display: none; }
+:root[data-tema="dark"] .icono-sol  { display: block; }
 .visualmente-oculto {
     position: absolute; width: 1px; height: 1px;
     padding: 0; margin: -1px; overflow: hidden;
@@ -420,7 +425,7 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
    alineados a la izquierda necesitan su propia clase o se centran en x=4
    y se salen del lienzo por la izquierda. */
 .fdi-izq { text-anchor: start; }
-:root[data-theme="dark"] .cara { stroke: #33485A; }
+:root[data-tema="dark"] .cara { stroke: #33485A; }
 
 @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
@@ -1388,14 +1393,14 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
         // El claro es el predeterminado: solo hay oscuro si el visitante lo
         // pidió. No se consulta la preferencia del sistema operativo.
         function esOscuro() {
-            return raiz.getAttribute("data-theme") === "dark";
+            return raiz.getAttribute("data-tema") === "dark";
         }
         function reflejar() {
             boton.setAttribute("aria-pressed", esOscuro() ? "true" : "false");
         }
         boton.addEventListener("click", function () {
             var nuevo = esOscuro() ? "light" : "dark";
-            raiz.setAttribute("data-theme", nuevo);
+            raiz.setAttribute("data-tema", nuevo);
             try { localStorage.setItem("kd-tema", nuevo); } catch (e) { /* sin almacenamiento */ }
             reflejar();
         });

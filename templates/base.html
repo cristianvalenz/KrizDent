@@ -21,7 +21,7 @@
       try {
         var elegido = localStorage.getItem("kd-tema");
         if (elegido === "dark" || elegido === "light") {
-          document.documentElement.setAttribute("data-theme", elegido);
+          document.documentElement.setAttribute("data-tema", elegido);
         }
       } catch (e) { /* navegador sin almacenamiento: queda el tema del sistema */ }
     })();
@@ -227,7 +227,7 @@
     // El claro es el predeterminado: solo hay tema oscuro si el usuario lo
     // pidió. No se consulta la preferencia del sistema operativo.
     function esOscuro() {
-        return raiz.getAttribute("data-theme") === "dark";
+        return raiz.getAttribute("data-tema") === "dark";
     }
 
     function reflejar() {
@@ -239,7 +239,7 @@
 
     boton.addEventListener("click", function () {
         var nuevo = esOscuro() ? "light" : "dark";
-        raiz.setAttribute("data-theme", nuevo);
+        raiz.setAttribute("data-tema", nuevo);
         try { localStorage.setItem("kd-tema", nuevo); } catch (e) { /* sin almacenamiento */ }
         reflejar();
     });
