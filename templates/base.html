@@ -222,12 +222,12 @@
     if (!boton) return;
 
     var raiz = document.documentElement;
-    var delSistema = window.matchMedia("(prefers-color-scheme: dark)");
     var texto = boton.querySelector(".kd-tema-texto");
 
+    // El claro es el predeterminado: solo hay tema oscuro si el usuario lo
+    // pidió. No se consulta la preferencia del sistema operativo.
     function esOscuro() {
-        var puesto = raiz.getAttribute("data-theme");
-        return puesto ? puesto === "dark" : delSistema.matches;
+        return raiz.getAttribute("data-theme") === "dark";
     }
 
     function reflejar() {
@@ -242,11 +242,6 @@
         raiz.setAttribute("data-theme", nuevo);
         try { localStorage.setItem("kd-tema", nuevo); } catch (e) { /* sin almacenamiento */ }
         reflejar();
-    });
-
-    // Si el usuario no eligió nada, seguir al sistema cuando este cambie.
-    delSistema.addEventListener("change", function () {
-        if (!raiz.getAttribute("data-theme")) reflejar();
     });
 
     reflejar();

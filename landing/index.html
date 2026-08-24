@@ -50,26 +50,6 @@
     --radio: 12px;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-        --tinta:     #0C141B;
-        --tinta-2:   #16232E;
-        --ground:    #0C141B;
-        --panel:     #14212B;
-        --linea:     #253744;
-        --linea-2:   #1C2C37;
-        --clinico:   #4FA8C7;
-        --clinico-2: #7BC4DC;
-        --lesion:    #E8706F;
-        --verde:     #4FB795;
-        --oro:       #D9B94A;
-        --texto:     #E8EFF2;
-        --texto-2:   #A5B6C0;
-        --texto-3:   #7E929E;
-        --sombra:     0 1px 2px rgba(0,0,0,.3), 0 3px 10px rgba(0,0,0,.24);
-        --sombra-alta:0 2px 6px rgba(0,0,0,.36), 0 18px 44px rgba(0,0,0,.42);
-    }
-}
 :root[data-theme="dark"] {
     --tinta:     #0C141B;
     --tinta-2:   #16232E;
@@ -178,10 +158,6 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
 .icono-sol  { display: none; }
 :root[data-theme="dark"] .icono-luna { display: none; }
 :root[data-theme="dark"] .icono-sol  { display: block; }
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .icono-luna { display: none; }
-    :root:not([data-theme="light"]) .icono-sol  { display: block; }
-}
 .visualmente-oculto {
     position: absolute; width: 1px; height: 1px;
     padding: 0; margin: -1px; overflow: hidden;
@@ -444,8 +420,7 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
    alineados a la izquierda necesitan su propia clase o se centran en x=4
    y se salen del lienzo por la izquierda. */
 .fdi-izq { text-anchor: start; }
-:root[data-theme="dark"] .cara, :root:not([data-theme="light"]) .cara { stroke: #33485A; }
-@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .cara { stroke: #C6D0D6; } }
+:root[data-theme="dark"] .cara { stroke: #33485A; }
 
 @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
@@ -1409,11 +1384,11 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
     var boton = document.getElementById("tema");
     if (boton) {
         var raiz = document.documentElement;
-        var delSistema = window.matchMedia("(prefers-color-scheme: dark)");
 
+        // El claro es el predeterminado: solo hay oscuro si el visitante lo
+        // pidió. No se consulta la preferencia del sistema operativo.
         function esOscuro() {
-            var puesto = raiz.getAttribute("data-theme");
-            return puesto ? puesto === "dark" : delSistema.matches;
+            return raiz.getAttribute("data-theme") === "dark";
         }
         function reflejar() {
             boton.setAttribute("aria-pressed", esOscuro() ? "true" : "false");
@@ -1423,9 +1398,6 @@ a { color: var(--clinico); text-decoration-thickness: 1px; text-underline-offset
             raiz.setAttribute("data-theme", nuevo);
             try { localStorage.setItem("kd-tema", nuevo); } catch (e) { /* sin almacenamiento */ }
             reflejar();
-        });
-        delSistema.addEventListener("change", function () {
-            if (!raiz.getAttribute("data-theme")) reflejar();
         });
         reflejar();
     }
