@@ -21,10 +21,29 @@
         <input class="form-control" id="nombre" name="nombre" required
                value="{{ paciente.nombre or '' }}" placeholder="Apellidos y nombres">
       </div>
+      {# El tipo va junto al número porque cada uno se valida distinto:
+         el DNI son 8 dígitos y el carné de extranjería es alfanumérico. #}
       <div class="col-md-4">
-        <label class="form-label" for="documento">Documento</label>
+        <label class="form-label" for="tipo_documento">Tipo de documento</label>
+        <select class="form-select" id="tipo_documento" name="tipo_documento">
+          {% for clave, etiqueta in tipos_documento.items() %}
+            <option value="{{ clave }}"
+                    {% if (paciente.tipo_documento or 'dni') == clave %}selected{% endif %}>
+              {{ etiqueta }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label" for="documento">Número</label>
         <input class="form-control dato" id="documento" name="documento"
-               value="{{ paciente.documento or '' }}" placeholder="DNI o CE">
+               value="{{ paciente.documento or '' }}"
+               autocapitalize="characters" spellcheck="false"
+               data-pista-dni="8 dígitos"
+               data-pista-ce="9 a 12 caracteres"
+               data-pista-pasaporte="6 a 12 caracteres">
+        <div class="form-text" id="pista-documento">8 dígitos</div>
       </div>
 
       <div class="col-md-4">
@@ -116,6 +135,23 @@
       else textarea.focus();
     }
     radios.forEach(function (r) { r.addEventListener('change', actualizar); });
+  })();
+
+  // La pista bajo el número cambia con el tipo: el formato de un DNI no es el
+  // de un carné de extranjería, y verlo antes de tipear evita el rechazo.
+  (function () {
+    var tipo = document.getElementById('tipo_documento');
+    var numero = document.getElementById('documento');
+    var pista = document.getElementById('pista-documento');
+    if (!tipo || !numero || !pista) return;
+
+    function actualizarPista() {
+      pista.textContent = numero.dataset['pista' + tipo.value.charAt(0).toUpperCase() +
+                                          tipo.value.slice(1)] || '';
+      numero.inputMode = tipo.value === 'dni' ? 'numeric' : 'text';
+    }
+    tipo.addEventListener('change', actualizarPista);
+    actualizarPista();
   })();
 </script>
 {% endblock %}

@@ -22,6 +22,7 @@ from reportlab.platypus import (BaseDocTemplate, Frame, HRFlowable,
 
 from services.auth import datos_clinica, logo_clinica
 from services.constantes import TIPOS_MORDIDA, TIPOS_PACIENTE
+from services.documentos import TIPOS_DOCUMENTO
 from services.filtros import edad as _texto_edad
 from services.filtros import fecha as _texto_fecha
 from services.odontograma_pdf import dibujar_odontograma, leyenda_odontograma
@@ -252,7 +253,9 @@ def generar_historial_pdf(paciente: dict, entradas: list,
     edad_txt = _texto_edad(paciente.get("fecha_nac"))
     tipo_txt = TIPOS_PACIENTE.get(paciente.get("tipo_paciente") or "adulto", "Adulto")
     tabla_datos = Table([
-        _fila_dato("DOCUMENTO", paciente.get("documento")),
+        _fila_dato(TIPOS_DOCUMENTO.get(paciente.get("tipo_documento") or "dni",
+                                      "DOCUMENTO").upper(),
+                   paciente.get("documento")),
         _fila_dato("FECHA DE NACIMIENTO / EDAD",
                    f"{_fecha_iso_a_es(paciente.get('fecha_nac'))} · {edad_txt}" if paciente.get("fecha_nac") else "—"),
         _fila_dato("TELÉFONO", paciente.get("telefono")),

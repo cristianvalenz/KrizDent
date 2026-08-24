@@ -17,6 +17,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 
 from services.auth import hashear, requiere_superadmin, usuario_actual
 from services.constantes import (ESTADOS_REPORTE, MODULOS, ROLES, TIPOS_REPORTE)
+from services.documentos import validar_ruc
 from services.storage import ErrorSubida, borrar_imagen, subir_logo
 from services.supabase_client import sb
 
@@ -128,10 +129,15 @@ def nueva_clinica():
         flash("El nombre de la clínica es obligatorio.", "danger")
         return redirect(url_for("admin.clinicas"))
 
+    ruc, error_ruc = validar_ruc(request.form.get("ruc"))
+    if error_ruc:
+        flash(error_ruc, "danger")
+        return redirect(url_for("admin.clinicas"))
+
     creada = sb.table("clinicas").insert({
         "nombre": nombre,
         "slug": _slug_libre(_slug(nombre)),
-        "ruc": (request.form.get("ruc") or "").strip() or None,
+        "ruc": ruc,
         "telefono": (request.form.get("telefono") or "").strip() or None,
         "direccion": (request.form.get("direccion") or "").strip() or None,
         "vence_el": _fecha_o_none(request.form.get("vence_el")),
@@ -160,9 +166,14 @@ def clinica(clinica_id):
 @bp.route("/clinicas/<int:clinica_id>/guardar", methods=["POST"])
 @requiere_superadmin
 def guardar_clinica(clinica_id):
+    ruc, error_ruc = validar_ruc(request.form.get("ruc"))
+    if error_ruc:
+        flash(error_ruc, "danger")
+        return redirect(url_for("admin.clinica", clinica_id=clinica_id))
+
     cambios = {
         "nombre": (request.form.get("nombre") or "").strip(),
-        "ruc": (request.form.get("ruc") or "").strip() or None,
+        "ruc": ruc,
         "telefono": (request.form.get("telefono") or "").strip() or None,
         "telefono2": (request.form.get("telefono2") or "").strip() or None,
         "telefono3": (request.form.get("telefono3") or "").strip() or None,

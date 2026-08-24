@@ -8,6 +8,7 @@ from services.constantes import (ARCADAS, CARAS_PIEZA, ESTADOS_CARA,
                                   ESTADOS_PIEZA, ESTADOS_TRATAMIENTO,
                                   METODOS_PAGO, TIPOS_MORDIDA, TIPOS_ORTODONCIA,
                                   TIPOS_PACIENTE)
+from services.documentos import TIPOS_DOCUMENTO, validar_documento
 from services.historial_pdf import generar_historial_pdf
 from services.auth import ins, sel, upd
 
@@ -15,8 +16,12 @@ from services.auth import ins, sel, upd
 bp = Blueprint("pacientes", __name__, url_prefix="/pacientes")
 
 
-def _campos_del_formulario(form) -> dict:
-    """Lee el formulario y normaliza: los campos vacíos se guardan como NULL, no como ''."""
+def _campos_del_formulario(form):
+    """
+    Lee el formulario y normaliza: los campos vacíos se guardan como NULL,
+    no como ''. Devuelve (datos, error) — error trae el motivo si el
+    documento no cuadra con su tipo.
+    """
     def limpio(clave):
         valor = (form.get(clave) or "").strip()
         return valor or None
@@ -25,20 +30,26 @@ def _campos_del_formulario(form) -> dict:
     if tipo_paciente not in TIPOS_PACIENTE:
         tipo_paciente = "adulto"
 
+    tipo_documento = form.get("tipo_documento")
+    if tipo_documento not in TIPOS_DOCUMENTO:
+        tipo_documento = "dni"
+    documento, error_doc = validar_documento(tipo_documento, form.get("documento"))
+
     # "Sin alergias" siempre guarda NULL, sin importar qué haya quedado en el
     # textarea (deshabilitado en el form, pero no confiamos en el cliente).
     alergias = limpio("alergias") if form.get("tiene_alergias") == "si" else None
 
     return {
         "nombre": (form.get("nombre") or "").strip(),
-        "documento": limpio("documento"),
+        "tipo_documento": tipo_documento,
+        "documento": documento,
         "fecha_nac": limpio("fecha_nac"),
         "telefono": limpio("telefono"),
         "email": limpio("email"),
         "direccion": limpio("direccion"),
         "alergias": alergias,
         "tipo_paciente": tipo_paciente,
-    }
+    }, error_doc
 
 
 @bp.route("/")
@@ -66,19 +77,23 @@ def lista():
 @bp.route("/nuevo", methods=["GET", "POST"])
 def nuevo():
     if request.method == "POST":
-        datos = _campos_del_formulario(request.form)
+        datos, error_doc = _campos_del_formulario(request.form)
 
-        if not datos["nombre"]:
-            flash("El nombre del paciente es obligatorio.", "danger")
-            return render_template("pacientes/formulario.html", paciente=datos, modo="nuevo",
-                                    tipos_paciente=TIPOS_PACIENTE)
+        problema = "El nombre del paciente es obligatorio." if not datos["nombre"] else error_doc
+        if problema:
+            flash(problema, "danger")
+            # Se devuelve lo tecleado para no obligar a escribirlo todo de nuevo.
+            escrito = dict(datos, documento=request.form.get("documento"))
+            return render_template("pacientes/formulario.html", paciente=escrito, modo="nuevo",
+                                    tipos_paciente=TIPOS_PACIENTE,
+                                    tipos_documento=TIPOS_DOCUMENTO)
 
         creado = ins("pacientes", datos).execute().data[0]
         flash(f"Paciente {creado['nombre']} registrado.", "success")
         return redirect(url_for("pacientes.detalle", paciente_id=creado["id"]))
 
     return render_template("pacientes/formulario.html", paciente={}, modo="nuevo",
-                            tipos_paciente=TIPOS_PACIENTE)
+                            tipos_paciente=TIPOS_PACIENTE, tipos_documento=TIPOS_DOCUMENTO)
 
 
 @bp.route("/<int:paciente_id>/editar", methods=["GET", "POST"])
@@ -86,17 +101,22 @@ def editar(paciente_id):
     paciente = _obtener_paciente(paciente_id)
 
     if request.method == "POST":
-        datos = _campos_del_formulario(request.form)
-        if not datos["nombre"]:
-            flash("El nombre del paciente es obligatorio.", "danger")
-            return render_template("pacientes/formulario.html", paciente=paciente, modo="editar",
-                                    tipos_paciente=TIPOS_PACIENTE)
+        datos, error_doc = _campos_del_formulario(request.form)
+
+        problema = "El nombre del paciente es obligatorio." if not datos["nombre"] else error_doc
+        if problema:
+            flash(problema, "danger")
+            escrito = dict(paciente, **datos, documento=request.form.get("documento"))
+            return render_template("pacientes/formulario.html", paciente=escrito, modo="editar",
+                                    tipos_paciente=TIPOS_PACIENTE,
+                                    tipos_documento=TIPOS_DOCUMENTO)
 
         upd("pacientes", datos).eq("id", paciente_id).execute()
         flash("Datos del paciente actualizados.", "success")
         return redirect(url_for("pacientes.detalle", paciente_id=paciente_id))
 
     return render_template("pacientes/formulario.html", paciente=paciente, modo="editar",
+                            tipos_documento=TIPOS_DOCUMENTO,
                             tipos_paciente=TIPOS_PACIENTE)
 
 

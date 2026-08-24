@@ -22,6 +22,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
 from services.auth import clinica_actual, datos_clinica, logo_clinica
+from services.documentos import ROTULO_CORTO
 from services.filtros import edad as _texto_edad
 
 AZUL = (0x16 / 255, 0x2A / 255, 0x5C / 255)      # navy de la marca
@@ -344,7 +345,10 @@ def _dibujar_bloque(c, x0, y0, w, h, receta, paciente, etiqueta_copia):
     edad_txt = _texto_edad(paciente.get("fecha_nac"))
     tercio = w / 3
     campo(x0, "Edad:", edad_txt if edad_txt != "—" else "", tercio - 30)
-    campo(x0 + tercio, "DNI:", paciente.get("documento") or "", tercio - 30)
+    # El rótulo sigue al tipo: poner "DNI" a un paciente con carné de
+    # extranjería deja una receta con un dato mal etiquetado.
+    rotulo_doc = ROTULO_CORTO.get(paciente.get("tipo_documento") or "dni", "Doc.")
+    campo(x0 + tercio, rotulo_doc + ":", paciente.get("documento") or "", tercio - 30)
     campo(x0 + tercio * 2, "Tel:", paciente.get("telefono") or "", tercio - 26)
     y -= 12
 

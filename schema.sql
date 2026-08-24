@@ -16,7 +16,7 @@ create table if not exists clinicas (
     id          bigserial primary key,
     nombre      text not null,
     slug        text not null unique,          -- identificador corto y estable
-    ruc         text,
+    ruc         text,                          -- 11 dígitos, verificado módulo 11 al guardar
     direccion   text,
     -- Hasta 3 números de contacto para el encabezado de recetas e historias.
     -- Los vacíos no ocupan lugar; con uno solo el diseño queda igual que antes.
@@ -89,7 +89,12 @@ create table if not exists profesionales (
 create table if not exists pacientes (
     id            bigserial primary key,
     nombre        text not null,               -- nombre completo
-    documento     varchar(15),                 -- DNI / CE (opcional pero útil para búsquedas)
+    -- El tipo va aparte del número porque cada uno valida distinto: el DNI
+    -- son 8 dígitos y el carné de extranjería es alfanumérico y más largo.
+    -- La validación vive en services/documentos.py.
+    tipo_documento text not null default 'dni'
+                  check (tipo_documento in ('dni', 'ce', 'pasaporte')),
+    documento     varchar(15),                 -- opcional: a veces se atiende antes de tener papeles
     fecha_nac     date,
     telefono      varchar(25),
     email         text,
